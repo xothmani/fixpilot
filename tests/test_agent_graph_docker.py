@@ -50,7 +50,8 @@ def test_a_full_run_works_for_every_variant(variant, tmp_path):
     if variant == "one_shot":
         assert rec.searches == 0 and rec.gt_in_first_search is not None  # one automatic search
     if variant == "no_search":
-        assert rec.gt_in_first_search is None and rec.first_evidence["source"] == "test_output"
+        # the failing test is called test_sales_summary_empty, which shares words with sales_summary
+        assert rec.gt_in_first_search is None and rec.first_evidence["source"] == "test_name"
 
 
 def test_the_automatic_search_is_not_counted_as_an_agent_tool_call():
@@ -68,7 +69,8 @@ def test_condition_a_shows_tracebacks_and_condition_b_hides_them(tmp_path):
     results = next(r for m in first_tests_b if m["role"] == "tool_results" for r in m["results"]
                    if r["name"] == "run_tests")["content"]
     assert "ZeroDivisionError" not in results and "Traceback" not in results
-    assert "FAILED tests/test_reports_history.py::test_sales_summary_empty" in results
+    assert "test_sales_summary_empty" not in results and "FAILED" not in results  # no test names in B
+    assert "1 failed" in results
 
 
 def test_the_agent_is_told_nothing_but_the_report_and_file_paths(tmp_path):

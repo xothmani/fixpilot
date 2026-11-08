@@ -127,11 +127,13 @@ def read_file(ctx: ToolContext, inp: ReadFileInput) -> dict:
 # ---------------------------------------------------------------- run_tests
 
 
-def _blind_output(failed: list[str], n_passed: int, n_failed: int, n_errors: int,
-                  timed_out: bool) -> str:
-    """Condition B: pass/fail counts and failing test names only. No tracebacks, no source lines."""
+def _blind_output(n_passed: int, n_failed: int, n_errors: int, timed_out: bool) -> str:
+    """Condition B: pass/fail COUNTS only. No tracebacks, no source lines, no test names.
+
+    Test names hand over the function name (a failing test called test_total_pages points at
+    total_pages), so B hides them. The agent can still run one test file at a time to narrow it down.
+    """
     lines = [f"{n_failed} failed, {n_passed} passed, {n_errors} errors"]
-    lines += [f"FAILED {t}" for t in failed]
     if timed_out:
         lines.append("The test run exceeded the time limit and was killed.")
     return "\n".join(lines)
@@ -162,11 +164,13 @@ def run_tests(ctx: ToolContext, inp: RunTestsInput) -> dict:
     ))
     if st.verified_fixed():
         st.stop(Status.FIXED, "tests_passed")
-    output = res.output if ctx.test_mode == "realistic" else _blind_output(
-        failed, res.n_passed, res.n_failed, res.n_errors, res.timed_out)
-    return {"passed": res.passed, "full_suite": full, "n_passed": res.n_passed,
+    data = {"passed": res.passed, "full_suite": full, "n_passed": res.n_passed,
             "n_failed": res.n_failed, "n_errors": res.n_errors, "timed_out": res.timed_out,
-            "duration_s": res.duration_s, "failed_tests": failed, "output": output}
+            "duration_s": res.duration_s}
+    if ctx.test_mode == "realistic":
+        return {**data, "failed_tests": failed, "output": res.output}
+    # blind: the model gets counts only. The names stay in the application's own state.
+    return {**data, "output": _blind_output(res.n_passed, res.n_failed, res.n_errors, res.timed_out)}
 
 
 # ---------------------------------------------------------------- propose_patch

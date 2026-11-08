@@ -1,5 +1,6 @@
 """Agent tests that run real sandbox containers. Skipped when Docker is not available."""
 
+import json
 import subprocess
 
 import pytest
@@ -65,13 +66,16 @@ def test_realistic_output_shows_the_traceback(broken):
     assert "assert" in r.data["output"] and "test_calc.py" in r.data["output"]
 
 
-def test_blind_output_has_names_and_counts_only(tmp_path):
+def test_blind_output_has_counts_only_and_no_test_names(tmp_path):
     files = {**REPO, "pkg/calc.py": REPO["pkg/calc.py"].replace("return a - b", "return a + b")}
-    ws, _ctx, reg = make_docker_ctx(tmp_path, files, test_mode="blind")
+    ws, ctx, reg = make_docker_ctx(tmp_path, files, test_mode="blind")
     try:
-        out = reg.call("run_tests", {}).data["output"]
-        assert out == "1 failed, 1 passed, 0 errors\nFAILED tests/test_calc.py::test_sub"
-        assert "assert" not in out and "Traceback" not in out and "pkg/calc.py" not in out
+        data = reg.call("run_tests", {}).data
+        assert data["output"] == "1 failed, 1 passed, 0 errors"
+        assert "failed_tests" not in data  # the names are not given to the model
+        assert "test_sub" not in json.dumps(data) and "Traceback" not in data["output"]
+        # the application still knows which test failed (for its own bookkeeping)
+        assert ctx.state.test_results[-1].failed_tests == ["tests/test_calc.py::test_sub"]
     finally:
         ws.cleanup()
 

@@ -78,6 +78,10 @@ class FakeLLM:
         msg = AssistantMsg(turn.text, calls, None, self.provider)
         return LLMResponse(msg, stop, usage, 0.0, turn.refusal)
 
+    @property
+    def requests_sent(self) -> int:
+        return self.calls
+
     def metadata_tool_support(self) -> ToolSupport:
         if self.tools_supported:
             return ToolSupport("supported", "the fake model always supports tools")

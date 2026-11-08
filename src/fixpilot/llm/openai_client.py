@@ -65,6 +65,11 @@ class OpenAICompatClient:
         self._retrier = retrier or Retrier(cfg.retry_policy())
 
     @property
+    def requests_sent(self) -> int:
+        """Requests sent to the provider, including retries after a 429."""
+        return self._retrier.attempts
+
+    @property
     def waited_s(self) -> float:
         """Seconds spent waiting for rate limits and pacing so far."""
         return self._retrier.waited_s

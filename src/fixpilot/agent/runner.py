@@ -88,6 +88,12 @@ class RunRecord(BaseModel):
     report_status: str | None
     error: str | None
     outcome: str = "completed"  # or "not_run_provider_limit"
+    first_query: str | None = None  # the agent's first written search
+    first_query_origin: str | None = None  # test_name | report | both | other
+    leak_channels: list[str] = []  # test_name / test_output seen before the first patch
+    patch_lines: int = 0  # lines added plus removed
+    reference_lines: int = 0  # the same for the smallest known fix
+    requests_sent: int = 0  # requests to the provider, including retries after a 429
     provider_limit_kind: str | None = None  # 'rate' or 'daily'
     waited_s: float = 0.0  # seconds spent waiting for provider rate limits
 
@@ -139,6 +145,7 @@ def run_one(spec: RunSpec, llm_cfg: LLMConfig, limits: Limits, embedder: Embedde
                 json.dumps(clean(transcript(loop.messages), 20_000), indent=2) + "\n")
 
     blocked = totals.provider_limit is not None
+    fq, fq_origin = scoring.first_query_origin(report_text, ctx.tracer.records)
     stop = state.stop_reason or ""
     record = RunRecord(
         run_id=run_id, experiment_id=experiment_id, split=spec.split, bug_id=bug.id,
@@ -159,6 +166,9 @@ def run_one(spec: RunSpec, llm_cfg: LLMConfig, limits: Limits, embedder: Embedde
         gt_in_any_search=any(in_each) if in_each else None,
         first_evidence=scoring.first_evidence(bug, ctx.tracer.records),
         report_status=state.final_report.status if state.final_report else None,
+        first_query=fq, first_query_origin=fq_origin, leak_channels=scoring.leak_channels(bug, ctx.tracer.records),
+        patch_lines=scoring.patch_size(diff), reference_lines=scoring.reference_size(bug),
+        requests_sent=getattr(llm, "requests_sent", totals.llm_calls),
         error=totals.error, outcome="not_run_provider_limit" if blocked else "completed",
         provider_limit_kind=totals.provider_limit, waited_s=round(totals.waited_s, 2),
     )

@@ -47,6 +47,10 @@ class AnthropicClient:
         self._retrier = retrier or Retrier(cfg.retry_policy())
 
     @property
+    def requests_sent(self) -> int:
+        return self._retrier.attempts
+
+    @property
     def waited_s(self) -> float:
         return self._retrier.waited_s
 

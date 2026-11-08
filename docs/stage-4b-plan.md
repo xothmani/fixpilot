@@ -95,3 +95,11 @@ Per variant, style and condition:
 2. The model's prices, copied from its pricing page.
 3. The API key exported in your own shell (never in a file).
 4. An approved budget, after you have seen the estimate for the pilot.
+
+## Changes after the first real-model run (see README, "Design decision")
+
+- Condition B now shows pass/fail counts only. Failing test names are hidden because they hand over
+  the function name.
+- The leak counter has a `test_name` channel, and the first written search is classified by origin.
+- Each run records its patch size next to the smallest known fix, and the number of requests sent
+  (retries after a 429 included).

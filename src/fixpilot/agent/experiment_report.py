@@ -94,7 +94,7 @@ def _section(all_rows: list[RunRecord], planned_per_cell: int | None) -> list[st
     for v in variants:
         out.append(f"{v:<14}" + "".join(f"{_cell(_rows(records, variant=v, style=s, condition=c), planned_per_cell):<14}"
                                         for s, c in cols))
-    out.append("A = realistic test output (headline).  B = blind: counts and failing test names only.\n")
+    out.append("A = realistic test output (headline).  B = blind: pass/fail counts only (no tracebacks, no test names).\n")
 
     out.append("LOCALIZATION: the patch changed the right function / the right file")
     for v in variants:
@@ -123,6 +123,34 @@ def _section(all_rows: list[RunRecord], planned_per_cell: int | None) -> list[st
         out.append(f"  {v:<14} " + ", ".join(f"{k} {n}" for k, n in sorted(counts.items())))
     out.append("")
 
+    out.append("TEST OUTPUT HINTS: what the test output gave away before the agent's first patch")
+    for v in variants:
+        rows = _rows(records, variant=v)
+        n = len(rows)
+        names = sum("test_name" in r.leak_channels for r in rows)
+        paths = sum("test_output" in r.leak_channels for r in rows)
+        none = sum(not r.leak_channels for r in rows)
+        out.append(f"  {v:<14} a failing test name shared words with the buggy function {names}/{n}   "
+                   f"a traceback named the buggy file {paths}/{n}   neither {none}/{n}")
+    searchers = [r for r in records if r.first_query_origin]
+    if searchers:
+        out.append("")
+        out.append("FIRST SEARCH WRITTEN BY THE AGENT: where its words came from")
+        counts = Counter(r.first_query_origin for r in searchers)
+        out.append("  " + ", ".join(f"{k} {n}" for k, n in sorted(counts.items()))
+                   + "   (test_name = copied from a failing test's name, report = from the bug report)")
+    out.append("")
+
+    out.append("PATCH SIZE: lines changed (added plus removed) compared with the smallest known fix")
+    for v in variants:
+        rows = [r for r in _rows(records, variant=v) if r.patch_lines]
+        if not rows:
+            continue
+        bigger = sum(r.patch_lines > r.reference_lines for r in rows)
+        out.append(f"  {v:<14} bigger than needed {bigger}/{len(rows)}   mean patch {sum(r.patch_lines for r in rows) / len(rows):.1f} lines"
+                   f"   smallest known fix {sum(r.reference_lines for r in rows) / len(rows):.1f}")
+    out.append("")
+
     out.append("TOKENS AND MODEL CALLS PER RUN (measured, completed runs)")
     for v in variants:
         rows = _rows(records, variant=v)
@@ -131,6 +159,10 @@ def _section(all_rows: list[RunRecord], planned_per_cell: int | None) -> list[st
         out.append(f"  {'':<14} model calls   {_spread([r.llm_calls for r in rows])}   (each call is one request to the provider)")
     if any(r.usage_estimated for r in records):
         out.append("  note: some runs had no usage numbers from the provider, so their tokens are estimates")
+    out.append("")
+
+    sent = sum(r.requests_sent for r in all_rows)
+    out.append(f"REQUESTS SENT TO THE PROVIDER in these runs: {sent} (retries after a 429 included)")
     out.append("")
 
     out.append("COST AND EFFORT (mean per run)")

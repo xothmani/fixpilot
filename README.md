@@ -178,7 +178,7 @@ $0.25 and 200k tokens (the last two are used from Stage 4b on). Override with th
 `FIXPILOT_MAX_*` and `FIXPILOT_TIMEOUT_S` environment variables.
 
 Every call is written to `runs/<time>-<bug>/trace.jsonl` with secrets removed. Tests can be shown
-in two ways: `realistic` (full pytest output, condition A) or `blind` (counts and failing test names
+in two ways: `realistic` (full pytest output, condition A) or `blind` (pass/fail counts
 only, condition B).
 
 ```bash
@@ -240,6 +240,32 @@ fixpilot experiment run --bugs shop-03,task-02,tiny-01 --repeats 1 --id rehearsa
 fixpilot experiment report runs/experiment-rehearsal  # tables, marked NOT REPORTABLE
 fixpilot agent run dev-01 --split dev                 # one run on a throwaway dev bug
 ```
+
+### Design decision: what the test output gives away (conditions A and B)
+
+In the first real-model run (a free Gemini model on a throwaway dev bug, not a result) the agent's
+first search was `total_pages`. It copied that from the failing test `test_total_pages` in the test
+output, not from the vague bug report. A failing test's name usually hands over the function name,
+so the location of a bug leaks through the test output. The design reacts like this:
+
+- **Condition A (realistic) stays the headline.** It shows the full pytest output, as a developer
+  would see it. It is allowed to help, but the help is now measured. Every run records
+  `test_name` (a failing test's name shares words with the buggy function), `test_output` (a
+  traceback names the buggy file), and where the agent's first written search came from
+  (`test_name`, `report`, `both` or `other`). The report prints these counts.
+- **Condition B (blind) is stricter than before.** The agent now sees only pass/fail counts, for
+  example `1 failed, 111 passed, 0 errors`. No tracebacks, no source lines and no test names (earlier
+  it still saw the names). The agent can still narrow things down by running one test file at a time,
+  which costs it tool calls. The application keeps the failing names in its own state for
+  bookkeeping, and never gives them to the model.
+- **These are indicators, not exact measures.** Name overlap counts shared distinctive words (four
+  letters or more, not generic words like "test" or "basic"), so a partial overlap counts and a
+  synonym is missed.
+- **Stage 3 retrieval recall is unaffected.** It used the report text only.
+
+The report also records the size of each patch (lines added plus removed) next to the smallest known
+fix, because the same run showed a model adding an unrequested check that the tests do not cover.
+A passing test suite alone can overstate how good a fix is.
 
 ### Rate limits and free tiers
 
