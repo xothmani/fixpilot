@@ -29,6 +29,21 @@ _STOP = {"tool_calls": "tool_use", "function_call": "tool_use", "stop": "end_tur
          "length": "max_tokens", "content_filter": "refusal"}
 
 
+def _error_detail(e: Exception) -> str:
+    """The error text plus the provider's own explanation (the body), shortened.
+
+    Some servers send a JSON list instead of an object, which makes the SDK's message just
+    'Error code: 400'. The body is where the reason is.
+    """
+    text = str(e)[:200]
+    body = getattr(e, "body", None)
+    if body is None:
+        body = getattr(getattr(e, "response", None), "text", None)
+    if body:
+        text += f" | provider said: {str(body)[:600]}"
+    return text
+
+
 def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
@@ -64,7 +79,8 @@ class OpenAICompatClient:
                 if m.tool_calls:
                     item["tool_calls"] = [
                         {"id": c.id, "type": "function",
-                         "function": {"name": c.name, "arguments": json.dumps(c.args or {})}}
+                         "function": {"name": c.name, "arguments": json.dumps(c.args or {})},
+                         **({"extra_content": c.extra} if c.extra else {})}
                         for c in m.tool_calls]
                 out.append(item)
             elif isinstance(m, ToolResultsMsg):
@@ -95,7 +111,7 @@ class OpenAICompatClient:
             status = getattr(e, "status_code", None)
             raise LLMError(f"{self.cfg.base_url_host or 'provider'} call failed "
                            f"({type(e).__name__}{f', HTTP {status}' if status else ''}): "
-                           f"{str(e)[:300]}") from None
+                           f"{_error_detail(e)}") from None
         latency = time.monotonic() - start
         if not getattr(resp, "choices", None):
             raise LLMError("the provider returned no choices")
@@ -113,7 +129,8 @@ class OpenAICompatClient:
                 args = args if isinstance(args, dict) else None
             except json.JSONDecodeError as e:
                 args, err = None, f"arguments were not valid JSON ({e.msg})"
-            calls.append(ToolCall(call_id, tc.function.name, args, err))
+            extra = (getattr(tc, "model_extra", None) or {}).get("extra_content") or getattr(tc, "extra_content", None)
+            calls.append(ToolCall(call_id, tc.function.name, args, err, extra if isinstance(extra, dict) else None))
 
         stop = _STOP.get(choice.finish_reason or "", "other")
         if calls and stop in ("end_turn", "other"):  # some servers say "stop" with tool calls

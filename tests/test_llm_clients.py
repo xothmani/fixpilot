@@ -254,3 +254,41 @@ def test_fake_model_without_tools_fails_the_check():
     llm = FakeLLM(scripted_policy([FakeTurn(text="x")]), tools_supported=False)
     with pytest.raises(ToolSupportError):
         check_tool_support(llm)
+
+
+# ------------------------------------------------------------------ provider extras and error detail
+
+
+def test_provider_extras_on_tool_calls_are_sent_back_unchanged():
+    """Gemini 3 needs its 'thought signature' returned with the tool call or it answers HTTP 400."""
+    call = o_call("k1", "read_file", '{"path": "x.py"}')
+    call.model_extra = {"extra_content": {"google": {"thought_signature": "SIG-123"}}}
+    resp = o_response(None, [call], "tool_calls")
+    client = OpenAICompatClient(LLMConfig.from_env(OAI), FakeOpenAISDK(resp))
+    out = client.generate("S", [UserMsg("q")], TOOLS)
+    assert out.message.tool_calls[0].extra == {"google": {"thought_signature": "SIG-123"}}
+
+    sdk = FakeOpenAISDK(o_response("done"))
+    again = OpenAICompatClient(LLMConfig.from_env(OAI), sdk)
+    again.generate("S", [UserMsg("q"), out.message,
+                         ToolResultsMsg([ToolResultItem("k1", "read_file", "contents")])], TOOLS)
+    sent = sdk.requests[0]["messages"][2]["tool_calls"][0]
+    assert sent["extra_content"] == {"google": {"thought_signature": "SIG-123"}}
+
+
+def test_no_extra_content_is_invented_when_the_provider_sent_none():
+    sdk = FakeOpenAISDK(o_response("hi"))
+    msgs = [UserMsg("q"), AssistantMsg("", [ToolCall("a", "read_file", {})]),
+            ToolResultsMsg([ToolResultItem("a", "read_file", "A")])]
+    OpenAICompatClient(LLMConfig.from_env(OAI), sdk).generate("S", msgs, TOOLS)
+    assert "extra_content" not in sdk.requests[0]["messages"][2]["tool_calls"][0]
+
+
+def test_the_providers_explanation_is_kept_in_the_error():
+    class Bad(Exception):
+        status_code = 400
+        body = ({"error": {"message": "Function call is missing a thought_signature"}},)
+
+    client = OpenAICompatClient(LLMConfig.from_env(OAI), FakeOpenAISDK(Bad("Error code: 400")))
+    with pytest.raises(LLMError, match="missing a thought_signature"):
+        client.generate("S", [UserMsg("q")], TOOLS)

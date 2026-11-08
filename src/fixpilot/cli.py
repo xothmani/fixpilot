@@ -203,7 +203,9 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
     probe_cost = cfg.prices.cost(Usage(PROBE_ESTIMATED_TOKENS, 100)) if cfg.prices.known else None
     _require_approval(cfg, args, max(probe_cost or 0.0, 0.01) if probe_cost is not None else None, "the tool-call probe")
     support = check_tool_support(create_llm(cfg), probe=True)
-    print(f"tool calling: {support.status} ({support.detail})")
+    from fixpilot.agent.tracing import redact
+
+    print(f"tool calling: {support.status} ({redact(support.detail)})")
     return 0
 
 
@@ -438,7 +440,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return args.func(args)
     except (SandboxError, ValueError, RuntimeError) as e:  # ConfigError, BugError: ValueError
-        print(f"Error: {e}", file=sys.stderr)
+        from fixpilot.agent.tracing import redact
+
+        print(f"Error: {redact(str(e))}", file=sys.stderr)  # never echo a key, even by accident
         return 2
 
 

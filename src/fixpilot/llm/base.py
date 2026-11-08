@@ -116,6 +116,7 @@ class ToolCall:
     name: str
     args: dict | None  # None when the model's arguments could not be parsed
     arg_error: str | None = None
+    extra: dict | None = None  # provider data to send back unchanged (Gemini 3 'thought signatures')
 
 
 @dataclass

@@ -123,3 +123,15 @@ def test_the_saved_experiment_settings_hold_no_key(tmp_path, monkeypatch):
     exp.run_experiment(cfg, LLMConfig.from_env(), progress=lambda _: None)
     saved = json.loads((tmp_path / "e" / "experiment.json").read_text())
     assert "api_key" not in json.dumps(saved) and KEY not in json.dumps(saved)
+
+
+def test_error_messages_printed_by_the_cli_never_contain_the_key(monkeypatch, capsys):
+    set_env(monkeypatch, {"FIXPILOT_LLM_PROVIDER": "fake", "FIXPILOT_LLM_API_KEY": KEY})
+
+    def boom(_args):
+        raise ValueError(f"provider said: invalid key {KEY}")
+
+    monkeypatch.setattr("fixpilot.cli.cmd_llm_check", boom)
+    assert main(["llm", "check"]) == 2
+    err = capsys.readouterr().err
+    assert KEY not in err and "[REDACTED]" in err
