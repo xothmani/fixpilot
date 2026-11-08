@@ -52,13 +52,39 @@ def _paired(records, style, cond, a, b) -> tuple[int, int, int]:
     return wins, ties, losses
 
 
-def _section(records: list[RunRecord], planned_per_cell: int | None) -> list[str]:
+def _spread(values: list[float]) -> str:
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    median = ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+    return f"mean {sum(ordered) / len(ordered):,.0f}   median {median:,.0f}   max {ordered[-1]:,.0f}"
+
+
+def _blocked_section(blocked: list[RunRecord]) -> list[str]:
+    kinds = Counter(r.provider_limit_kind or "unknown" for r in blocked)
+    out = [f"NOT RUN (PROVIDER LIMIT): {len(blocked)} attempt(s) refused by the provider after retries",
+           "These are NOT agent failures and are not in the fix rates above. A later run can redo them."]
+    out.append("  kinds: " + ", ".join(f"{k} {n}" for k, n in sorted(kinds.items())))
+    waited = sum(r.waited_s for r in blocked)
+    out.append(f"  seconds spent waiting before giving up: {waited:.0f}; model calls made before the refusal: "
+               f"{sum(r.llm_calls for r in blocked)}")
+    for r in blocked[:5]:
+        out.append(f"  {r.spec_key}: {r.error or '(no message)'}")
+    return out
+
+
+def _section(all_rows: list[RunRecord], planned_per_cell: int | None) -> list[str]:
     out: list[str] = []
-    variants = [v for v in VARIANTS if _rows(records, variant=v)]
-    price = records[0].prices
-    out.append(f"Model: {records[0].provider} / {records[0].model}   prices per million tokens: "
+    blocked = [r for r in all_rows if r.outcome != "completed"]
+    records = [r for r in all_rows if r.outcome == "completed"]
+    head = all_rows[0]
+    price = head.prices
+    out.append(f"Model: {head.provider} / {head.model}   prices per million tokens: "
                f"input {price['input_per_mtok']}, output {price['output_per_mtok']}")
-    out.append(f"Runs: {len(records)}   total cost: ${sum(r.cost_usd for r in records):.4f}   "
+    if not records:
+        return [*out, "No completed runs.", "", *_blocked_section(blocked)]
+    variants = [v for v in VARIANTS if _rows(records, variant=v)]
+    out.append(f"Completed runs: {len(records)}   attempts refused by the provider: {len(blocked)}   "
+               f"total cost: ${sum(r.cost_usd for r in all_rows):.4f}   "
                f"single-pass limit: {records[0].limits['max_attempts']} patch attempt(s)\n")
 
     out.append("FIX RATE: the whole test suite passes after the patch (checked by the application).")
@@ -97,6 +123,16 @@ def _section(records: list[RunRecord], planned_per_cell: int | None) -> list[str
         out.append(f"  {v:<14} " + ", ".join(f"{k} {n}" for k, n in sorted(counts.items())))
     out.append("")
 
+    out.append("TOKENS AND MODEL CALLS PER RUN (measured, completed runs)")
+    for v in variants:
+        rows = _rows(records, variant=v)
+        out.append(f"  {v:<14} input tokens  {_spread([r.tokens_in + r.cache_read_tokens + r.cache_write_tokens for r in rows])}")
+        out.append(f"  {'':<14} output tokens {_spread([r.tokens_out for r in rows])}")
+        out.append(f"  {'':<14} model calls   {_spread([r.llm_calls for r in rows])}   (each call is one request to the provider)")
+    if any(r.usage_estimated for r in records):
+        out.append("  note: some runs had no usage numbers from the provider, so their tokens are estimates")
+    out.append("")
+
     out.append("COST AND EFFORT (mean per run)")
     for v in variants:
         rows = _rows(records, variant=v)
@@ -123,11 +159,14 @@ def _section(records: list[RunRecord], planned_per_cell: int | None) -> list[str
                     out.append(f"  {a} vs {b}, {s}, {c}: {w} better, {t} same, {losses} worse")
     out.append("With 15 bugs, a difference of one or two bugs is not a real difference.\n")
 
-    out.append("PER BUG: fixed / runs (all styles and conditions together)")
+    out.append("PER BUG: fixed / completed runs (all styles and conditions together)")
     out.append(f"{'bug':<9}{'diff':<8}" + "".join(f"{v:<14}" for v in variants))
     for bug in sorted({r.bug_id for r in records}):
         diff = next(r.difficulty for r in records if r.bug_id == bug)
         out.append(f"{bug:<9}{diff:<8}" + "".join(f"{_cell(_rows(records, bug_id=bug, variant=v)):<14}" for v in variants))
+    if blocked:
+        out.append("")
+        out += _blocked_section(blocked)
     return out
 
 
@@ -144,7 +183,7 @@ def format_report(records: list[RunRecord], summary_dir: Path | None = None) -> 
         import json
 
         s = json.loads((Path(summary_dir) / "summary.json").read_text())
-        out.append(f"Planned runs: {s['planned']}   not run: {len(s['not_run'])}"
+        out.append(f"Planned runs: {s['planned']}   not started: {len(s['not_run'])}"
                    + (f"   STOPPED: {s['stopped_reason']}" if s["stopped_reason"] else ""))
     groups = defaultdict(list)
     for r in records:

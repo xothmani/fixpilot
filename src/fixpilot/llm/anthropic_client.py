@@ -11,6 +11,7 @@ from .base import (
     LLMResponse,
     Message,
     Prices,
+    Retrier,
     ToolCall,
     ToolResultsMsg,
     ToolSupport,
@@ -32,17 +33,22 @@ def _block_to_dict(block: Any) -> dict:
 class AnthropicClient:
     provider = "anthropic"
 
-    def __init__(self, cfg: LLMConfig, sdk: Any = None):
+    def __init__(self, cfg: LLMConfig, sdk: Any = None, retrier: Retrier | None = None):
         self.cfg = cfg
         self.model = cfg.model
         self.prices: Prices = cfg.prices
         if sdk is None:
             import anthropic
 
-            sdk = anthropic.Anthropic(
+            sdk = anthropic.Anthropic(  # retries are done by our own Retrier, so the SDK does none
                 api_key=cfg.api_key.get() if cfg.api_key else None,
-                base_url=cfg.base_url, timeout=cfg.timeout_s, max_retries=2)
+                base_url=cfg.base_url, timeout=cfg.timeout_s, max_retries=0)
         self._sdk = sdk
+        self._retrier = retrier or Retrier(cfg.retry_policy())
+
+    @property
+    def waited_s(self) -> float:
+        return self._retrier.waited_s
 
     # neutral messages -> Anthropic messages
     def _convert(self, messages: list[Message]) -> list[dict]:
@@ -74,7 +80,9 @@ class AnthropicClient:
             kwargs["output_config"] = {"effort": self.cfg.effort}
         start = time.monotonic()
         try:
-            resp = self._sdk.messages.create(**kwargs)
+            resp = self._retrier.call(lambda: self._sdk.messages.create(**kwargs))
+        except LLMError:
+            raise  # includes ProviderLimitError
         except Exception as e:  # noqa: BLE001 - every SDK error becomes one safe LLMError
             status = getattr(e, "status_code", None)
             raise LLMError(f"Anthropic call failed ({type(e).__name__}"

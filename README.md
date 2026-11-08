@@ -241,6 +241,17 @@ fixpilot experiment report runs/experiment-rehearsal  # tables, marked NOT REPOR
 fixpilot agent run dev-01 --split dev                 # one run on a throwaway dev bug
 ```
 
+### Rate limits and free tiers
+
+A 429 or quota error is retried with backoff (`FIXPILOT_LLM_RETRIES`, `FIXPILOT_LLM_BACKOFF_S`). If it
+still fails, the run is recorded as **not run (provider limit)**, not as an agent failure. Those runs
+are left out of the fix rates and reported in their own section, and running the same command again
+redoes only them. A daily quota message stops the experiment at once. Time spent waiting for the
+provider does not count against a run's time limit, and `FIXPILOT_LLM_MIN_INTERVAL_S` adds a polite
+gap between calls. With a price of 0 (free tier or local model) the cost cap is meaningless, so the
+token, tool-call and time limits are what protect you. The pilot plan for Google's free Gemini tier
+is in `docs/pilot-gemini.md`.
+
 ### Dev bugs
 
 `benchmark/dev_bugs` holds three throwaway bugs (`dev-01` to `dev-03`) for writing prompts. They live

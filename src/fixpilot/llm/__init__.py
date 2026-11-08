@@ -4,6 +4,7 @@ from .base import (
     LLMError,
     LLMResponse,
     Prices,
+    ProviderLimitError,
     ToolCall,
     ToolResultItem,
     ToolResultsMsg,
@@ -16,7 +17,7 @@ from .factory import create_llm
 from .support import ToolSupportError, check_tool_support
 
 __all__ = [
-    "AssistantMsg", "ConfigError", "LLMClient", "LLMConfig", "LLMError", "LLMResponse", "Prices",
+    "AssistantMsg", "ConfigError", "LLMClient", "LLMConfig", "LLMError", "LLMResponse", "Prices", "ProviderLimitError",
     "ToolCall", "ToolResultItem", "ToolResultsMsg", "ToolSupport", "ToolSupportError", "Usage",
     "UserMsg", "check_tool_support", "create_llm",
 ]

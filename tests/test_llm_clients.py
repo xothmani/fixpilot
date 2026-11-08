@@ -98,10 +98,10 @@ def test_anthropic_stop_reasons(stop, expected):
 
 def test_anthropic_errors_become_one_safe_error():
     class Boom(Exception):
-        status_code = 429
+        status_code = 400
 
-    client = AnthropicClient(LLMConfig.from_env(ANTH), FakeAnthropicSDK(Boom("rate limited")))
-    with pytest.raises(LLMError, match="HTTP 429"):
+    client = AnthropicClient(LLMConfig.from_env(ANTH), FakeAnthropicSDK(Boom("bad request")))
+    with pytest.raises(LLMError, match="HTTP 400"):
         client.generate("S", [UserMsg("q")], TOOLS)
 
 

@@ -87,6 +87,9 @@ class RunRecord(BaseModel):
     first_evidence: dict | None
     report_status: str | None
     error: str | None
+    outcome: str = "completed"  # or "not_run_provider_limit"
+    provider_limit_kind: str | None = None  # 'rate' or 'daily'
+    waited_s: float = 0.0  # seconds spent waiting for provider rate limits
 
     @property
     def spec_key(self) -> str:
@@ -135,6 +138,7 @@ def run_one(spec: RunSpec, llm_cfg: LLMConfig, limits: Limits, embedder: Embedde
             (Path(run_dir) / "transcript.json").write_text(
                 json.dumps(clean(transcript(loop.messages), 20_000), indent=2) + "\n")
 
+    blocked = totals.provider_limit is not None
     stop = state.stop_reason or ""
     record = RunRecord(
         run_id=run_id, experiment_id=experiment_id, split=spec.split, bug_id=bug.id,
@@ -142,8 +146,8 @@ def run_one(spec: RunSpec, llm_cfg: LLMConfig, limits: Limits, embedder: Embedde
         condition=spec.condition, repeat=spec.repeat, provider=llm.provider, model=llm.model,
         base_url_host=llm_cfg.base_url_host, prices=llm.prices.public(),
         prompt_cache=llm_cfg.prompt_cache, effort=llm_cfg.effort, limits=limits.model_dump(),
-        status=state.status.value, stop_reason=state.stop_reason,
-        cut_off_by_limit=stop.startswith("limit:"), verified_fixed=state.verified_fixed(),
+        status="not_run" if blocked else state.status.value, stop_reason=state.stop_reason,
+        cut_off_by_limit=stop.startswith("limit:"), verified_fixed=state.verified_fixed() and not blocked,
         attempts=state.attempt_count, tool_calls=state.budget.tool_calls, llm_calls=totals.llm_calls,
         tokens_in=totals.usage.input_tokens, tokens_out=totals.usage.output_tokens,
         cache_read_tokens=totals.usage.cache_read_tokens,
@@ -155,7 +159,8 @@ def run_one(spec: RunSpec, llm_cfg: LLMConfig, limits: Limits, embedder: Embedde
         gt_in_any_search=any(in_each) if in_each else None,
         first_evidence=scoring.first_evidence(bug, ctx.tracer.records),
         report_status=state.final_report.status if state.final_report else None,
-        error=totals.error,
+        error=totals.error, outcome="not_run_provider_limit" if blocked else "completed",
+        provider_limit_kind=totals.provider_limit, waited_s=round(totals.waited_s, 2),
     )
     if run_dir:
         (Path(run_dir) / "record.json").write_text(json.dumps(clean(record.model_dump(), 20_000), indent=2) + "\n")

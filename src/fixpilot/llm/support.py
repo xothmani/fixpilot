@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .base import LLMClient, LLMError, ToolSupport, UserMsg
+from .base import LLMClient, LLMError, ProviderLimitError, ToolSupport, UserMsg
 
 PING_TOOL = {
     "name": "ping",
@@ -24,6 +24,8 @@ def probe_tool_call(client: LLMClient) -> ToolSupport:
         resp = client.generate("You are a test. Follow the instruction exactly.",
                                [UserMsg("Call the ping tool with the word 'ok'. Do not answer in text.")],
                                [PING_TOOL])
+    except ProviderLimitError:
+        raise  # a rate limit says nothing about tool support
     except LLMError as e:
         text = str(e).lower()
         if "tool" in text or "function" in text:

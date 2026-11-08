@@ -87,7 +87,7 @@ def test_experiment_stops_by_itself_at_the_cap_and_reports_what_was_not_run(tmp_
     saved = json.loads((cfg.out_dir / "summary.json").read_text())
     assert saved["not_run"] == summary.skipped_keys and saved["spent_usd"] == summary.spent_usd
     report = format_report(exp.load_records(cfg.out_dir), cfg.out_dir)
-    assert "STOPPED: experiment cost cap reached" in report and f"not run: {len(summary.skipped_keys)}" in report
+    assert "STOPPED: experiment cost cap reached" in report and f"not started: {len(summary.skipped_keys)}" in report
 
 
 def test_a_run_cut_off_by_a_limit_counts_as_a_failure_and_is_reported(tmp_path):

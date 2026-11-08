@@ -82,7 +82,8 @@ def plan_experiment(cfg: ExperimentConfig, llm_cfg: LLMConfig) -> dict:
     per_run_cap = cfg.limits.max_cost_usd
     plan = {"split": cfg.split, "bugs": n_bugs, "runs": n_runs, "per_run_cap_usd": per_run_cap,
             "total_cap_usd": cfg.total_cost_cap_usd, "prices_known": llm_cfg.prices.known,
-            "provider": llm_cfg.provider, "model": llm_cfg.model}
+            "provider": llm_cfg.provider, "model": llm_cfg.model, "free": llm_cfg.is_free,
+            "limits": cfg.limits.model_dump()}
     if llm_cfg.prices.known:
         typical = llm_cfg.prices.cost(Usage(TYPICAL_INPUT_TOKENS, TYPICAL_OUTPUT_TOKENS))
         worst = n_runs * per_run_cap if per_run_cap is not None else None
@@ -101,6 +102,8 @@ class ExperimentSummary:
     skipped_keys: list[str]
     stopped_reason: str | None
     spent_usd: float
+    stopped_by: str | None = None  # 'cost_cap' or 'provider_limit'
+    blocked_keys: list[str] = field(default_factory=list)  # attempts the provider refused
 
 
 def load_records(out_dir: Path) -> list[RunRecord]:
@@ -128,7 +131,7 @@ def run_experiment(cfg: ExperimentConfig, llm_cfg: LLMConfig, embedder=None,
     if any((r.provider, r.model) != (llm_cfg.provider, llm_cfg.model) for r in existing):
         raise ConfigError("This experiment folder already has runs from a different model. Results "
                           "from different models are never mixed. Use a new experiment folder.")
-    done = {r.spec_key: r for r in existing}
+    done = {r.spec_key: r for r in existing if r.outcome == "completed"}  # refused attempts are retried
     budget = ExperimentBudget(cfg.total_cost_cap_usd, per_run_cap, sum(r.cost_usd for r in existing))
     (out / "experiment.json").write_text(json.dumps({
         "experiment_id": cfg.experiment_id, "split": cfg.split, "planned_runs": len(matrix),
@@ -138,13 +141,13 @@ def run_experiment(cfg: ExperimentConfig, llm_cfg: LLMConfig, embedder=None,
         "started": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
     }, indent=2) + "\n")
 
-    completed, stopped, skipped = 0, None, []
+    completed, stopped, stopped_by, skipped, blocked, in_a_row = 0, None, None, [], [], 0
     for i, spec in enumerate(matrix):
         if spec.key in done:
             continue
         ok, why = budget.can_start()  # checked before EVERY run
         if not ok:
-            stopped = why
+            stopped, stopped_by = why, "cost_cap"
             skipped = [s.key for s in matrix[i:] if s.key not in done]
             break
         record = run_one(spec, llm_cfg, cfg.limits, embedder, out / "runs" / spec.key.replace("|", "_"),
@@ -152,14 +155,29 @@ def run_experiment(cfg: ExperimentConfig, llm_cfg: LLMConfig, embedder=None,
         with (out / "records.jsonl").open("a") as f:
             f.write(record.model_dump_json() + "\n")
         budget.add(record.cost_usd)
+        if record.outcome != "completed":  # the provider refused: report it apart from agent failures
+            blocked.append(spec.key)
+            in_a_row += 1
+            progress(f"[{i + 1}/{len(matrix)}] {spec.key}: NOT RUN (provider limit, {record.provider_limit_kind})")
+            if record.provider_limit_kind == "daily" or in_a_row >= 3:
+                stopped_by = "provider_limit"
+                stopped = ("provider daily quota reached" if record.provider_limit_kind == "daily"
+                           else "the provider refused 3 runs in a row")
+                skipped = [s.key for s in matrix[i + 1:] if s.key not in done]
+                break
+            continue
+        in_a_row = 0
         completed += 1
         progress(f"[{i + 1}/{len(matrix)}] {spec.key}: {record.status}"
                  f"{' (cut off: ' + record.stop_reason + ')' if record.cut_off_by_limit else ''}"
                  f", ${record.cost_usd:.4f}, total ${budget.spent:.4f}")
-    summary = ExperimentSummary(len(matrix), completed, len(done), skipped, stopped, round(budget.spent, 6))
+    summary = ExperimentSummary(len(matrix), completed, len(done), skipped, stopped, round(budget.spent, 6),
+                                stopped_by, blocked)
     (out / "summary.json").write_text(json.dumps({
         "planned": summary.planned, "completed_now": completed, "already_done": len(done),
-        "not_run": skipped, "stopped_reason": stopped, "spent_usd": summary.spent_usd}, indent=2) + "\n")
+        "not_run": skipped, "provider_limit_attempts": blocked, "stopped_reason": stopped,
+        "stopped_by": stopped_by, "spent_usd": summary.spent_usd}, indent=2) + "\n")
     if stopped:
-        progress(f"STOPPED: {stopped}. {len(skipped)} runs were not run and are listed in summary.json")
+        progress(f"STOPPED: {stopped}. {len(skipped)} runs were not run and are listed in summary.json. "
+                 "Run the same command again later to continue.")
     return summary

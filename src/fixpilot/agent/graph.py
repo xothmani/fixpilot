@@ -20,6 +20,7 @@ from fixpilot.llm import (
     LLMClient,
     LLMError,
     LLMResponse,
+    ProviderLimitError,
     ToolResultItem,
     ToolResultsMsg,
     Usage,
@@ -31,6 +32,7 @@ from .context import ToolContext
 from .prompts import NUDGE, final_report_request
 from .registry import ToolRegistry, ToolResult
 from .state import Status
+from .tracing import redact
 
 # stop reasons after which asking the model for one more message (the report) still makes sense
 ASKABLE = {None, "tests_passed", "limit:max_tool_calls", "limit:max_attempts", "limit:max_turns"}
@@ -49,6 +51,8 @@ class LoopTotals:
     llm_calls: int = 0
     estimated_usage: bool = False
     error: str | None = None
+    provider_limit: str | None = None  # 'rate' or 'daily' when the provider refused the run
+    waited_s: float = 0.0  # seconds spent waiting for provider rate limits
 
 
 def render_result(result: ToolResult) -> str:
@@ -88,7 +92,13 @@ class AgentLoop:
         return None
 
     def _call(self, tools: list[dict]) -> LLMResponse:
-        resp = self.llm.generate(self.system, self.messages, tools)
+        waited_before = getattr(self.llm, "waited_s", 0.0)
+        try:
+            resp = self.llm.generate(self.system, self.messages, tools)
+        finally:  # waiting for the provider is not the agent's time, even if the call failed
+            waited = getattr(self.llm, "waited_s", 0.0) - waited_before
+            self.ctx.state.budget.paused_s += waited
+            self.totals.waited_s += waited
         u = resp.usage
         cost = self.llm.prices.cost(u) if self.llm.prices.known else 0.0
         self.ctx.state.budget.add_usage(u.input_tokens + u.cache_read_tokens + u.cache_write_tokens,
@@ -123,8 +133,14 @@ class AgentLoop:
             return {"next": "finish"}
         try:
             resp = self._call(tools)
+        except ProviderLimitError as e:  # the provider said no: not the agent's failure
+            self.totals.error = redact(str(e)[:300])
+            self.totals.provider_limit = e.kind
+            self.ctx.tracer.log(event="provider_limit", kind=e.kind, error=self.totals.error)
+            st.stop(Status.FAILED, "provider_limit")
+            return {"next": "finish"}
         except LLMError as e:
-            self.totals.error = str(e)[:300]
+            self.totals.error = redact(str(e)[:300])
             self.ctx.tracer.log(event="llm_error", error=self.totals.error)
             st.stop(Status.FAILED, "llm_error")
             return {"next": "finish"}
@@ -177,8 +193,8 @@ class AgentLoop:
         tools = [t for t in self.registry.tool_specs() if t["name"] == "write_report"]
         try:
             resp = self._call(tools)
-        except LLMError as e:
-            self.totals.error = str(e)[:300]
+        except LLMError as e:  # the fix already happened; a missing explanation does not undo it
+            self.totals.error = redact(str(e)[:300])
             return
         items = []
         for call in resp.message.tool_calls:

@@ -52,13 +52,14 @@ class Budget(BaseModel):
     tokens_out: int = 0
     cost_usd: float = 0.0
     started_at: float = Field(default_factory=time.monotonic)
+    paused_s: float = 0.0  # time spent waiting for provider rate limits (not the agent's time)
 
     @property
     def tokens(self) -> int:
         return self.tokens_in + self.tokens_out
 
     def elapsed_s(self) -> float:
-        return time.monotonic() - self.started_at
+        return time.monotonic() - self.started_at - self.paused_s
 
     def add_usage(self, tokens_in: int, tokens_out: int, cost_usd: float) -> None:
         """Called by the LLM layer (Stage 4b) after every model call."""

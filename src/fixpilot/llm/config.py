@@ -22,7 +22,8 @@ ENV_HELP = """\
   FIXPILOT_PRICE_CACHE_READ_PER_MTOK, FIXPILOT_PRICE_CACHE_WRITE_PER_MTOK   only with caching
   FIXPILOT_PROMPT_CACHE     1 to turn on prompt caching (anthropic only)
   FIXPILOT_EFFORT           low | medium | high | xhigh | max (anthropic only)
-  FIXPILOT_MAX_OUTPUT_TOKENS, FIXPILOT_LLM_TIMEOUT_S, FIXPILOT_TEMPERATURE (optional)"""
+  FIXPILOT_MAX_OUTPUT_TOKENS, FIXPILOT_LLM_TIMEOUT_S, FIXPILOT_TEMPERATURE (optional)
+  FIXPILOT_LLM_RETRIES, FIXPILOT_LLM_BACKOFF_S, FIXPILOT_LLM_MIN_INTERVAL_S (rate-limit handling)"""
 
 
 class ConfigError(ValueError):
@@ -74,6 +75,10 @@ class LLMConfig:
     timeout_s: float = 120.0
     temperature: float | None = None
     max_tokens_param: str = "max_tokens"  # some OpenAI models want max_completion_tokens
+    retries: int = 4  # extra attempts after a 429 or a temporary server error
+    backoff_base_s: float = 4.0
+    backoff_max_s: float = 60.0
+    min_interval_s: float = 0.0  # polite gap between calls, for free tiers with a per-minute cap
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> LLMConfig:
@@ -103,6 +108,10 @@ class LLMConfig:
         try:
             max_out = int(env.get("FIXPILOT_MAX_OUTPUT_TOKENS", "4096"))
             timeout = float(env.get("FIXPILOT_LLM_TIMEOUT_S", "120"))
+            retries = int(env.get("FIXPILOT_LLM_RETRIES", "4"))
+            backoff_base = float(env.get("FIXPILOT_LLM_BACKOFF_S", "4"))
+            backoff_max = float(env.get("FIXPILOT_LLM_BACKOFF_MAX_S", "60"))
+            min_interval = float(env.get("FIXPILOT_LLM_MIN_INTERVAL_S", "0"))
             temp_raw = env.get("FIXPILOT_TEMPERATURE", "").strip()
             temperature = float(temp_raw) if temp_raw else None
         except ValueError as e:
@@ -111,7 +120,8 @@ class LLMConfig:
         if param not in ("max_tokens", "max_completion_tokens"):
             raise ConfigError("FIXPILOT_OPENAI_MAX_TOKENS_PARAM must be max_tokens or max_completion_tokens")
         return cls(provider, model, base_url, Secret(key_raw) if key_raw else None, prices,
-                   _flag(env.get("FIXPILOT_PROMPT_CACHE")), effort, max_out, timeout, temperature, param)
+                   _flag(env.get("FIXPILOT_PROMPT_CACHE")), effort, max_out, timeout, temperature, param,
+                   max(0, retries), max(0.0, backoff_base), max(1.0, backoff_max), max(0.0, min_interval))
 
     # ------------------------------------------------------------ checks before any run
 
@@ -150,11 +160,23 @@ class LLMConfig:
                 "Prompt caching is on, so set FIXPILOT_PRICE_CACHE_READ_PER_MTOK and "
                 "FIXPILOT_PRICE_CACHE_WRITE_PER_MTOK. Cache prices differ by model, so none is assumed.")
 
+    def retry_policy(self):
+        from .base import RetryPolicy
+
+        return RetryPolicy(self.retries, self.backoff_base_s, self.backoff_max_s, self.min_interval_s)
+
+    @property
+    def is_free(self) -> bool:
+        """Price known and zero for both input and output (free tier or a local model)."""
+        return (self.prices.known and self.prices.input_per_mtok == 0 and self.prices.output_per_mtok == 0
+                and not self.prices.cache_read_per_mtok and not self.prices.cache_write_per_mtok)
+
     def public_dict(self) -> dict:
         """What may be written to logs and results. Never contains the key or the full URL."""
         return {"provider": self.provider, "model": self.model, "base_url_host": self.base_url_host,
                 "prices": self.prices.public(), "prompt_cache": self.prompt_cache,
-                "effort": self.effort, "max_output_tokens": self.max_output_tokens}
+                "effort": self.effort, "max_output_tokens": self.max_output_tokens,
+                "retries": self.retries, "min_interval_s": self.min_interval_s}
 
     def __repr__(self) -> str:
         return f"LLMConfig({self.public_dict()}, api_key={'set' if self.api_key else 'unset'})"

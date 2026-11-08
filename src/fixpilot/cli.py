@@ -168,7 +168,7 @@ def _llm_setup(need_cost_cap: float | None = None):
 
 def _require_approval(cfg, args, needed_usd: float | None, what: str) -> None:
     """Paid providers need an explicit, sufficient --approve-budget. The fake provider is free."""
-    if cfg.provider == "fake":
+    if cfg.provider == "fake" or cfg.is_free:  # nothing can be spent
         return
     approved = getattr(args, "approve_budget", None)
     if needed_usd is None:
@@ -188,6 +188,10 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
     print(f"API key: {'set' if cfg.api_key else 'not set'} (the value is never shown or stored)")
     print(f"prices per million tokens: {cfg.prices.public()}")
     print(f"prompt cache: {cfg.prompt_cache}   effort: {cfg.effort or '(provider default)'}")
+    print(f"rate limits: retry {cfg.retries} times with backoff (first wait {cfg.backoff_base_s}s, at most "
+          f"{cfg.backoff_max_s}s); minimum gap between calls {cfg.min_interval_s}s")
+    if cfg.is_free:
+        print("price: 0, so no money can be spent with this model")
     print(f"limits: tool calls {limits.max_tool_calls}, attempts {limits.max_attempts}, "
           f"seconds {limits.timeout_s}, tokens {limits.max_tokens}, cost per run ${limits.max_cost_usd}")
     cfg.validate_for_run(needs_cost=limits.max_cost_usd is not None)
@@ -225,17 +229,35 @@ def cmd_agent_run(args: argparse.Namespace) -> int:
     if bug is None:
         raise SystemExit(f"No bug {args.bug_id!r} in the {args.split} split.")
     worst = limits.max_cost_usd
-    print(f"{cfg.provider}/{cfg.model}: this run can cost up to "
-          f"{f'${worst:.2f}' if worst is not None else 'an unknown amount'} (per-run cap).")
+    if cfg.is_free:
+        print(f"{cfg.provider}/{cfg.model}: price 0 (free tier or local), so this run cannot spend money. "
+              f"Limits: {limits.max_tool_calls} tool calls, {limits.max_tokens:,} tokens, "
+              f"{limits.timeout_s}s (waiting for provider rate limits does not count).")
+    else:
+        print(f"{cfg.provider}/{cfg.model}: this run can cost up to "
+              f"{f'${worst:.2f}' if worst is not None else 'an unknown amount'} (per-run cap).")
     _require_approval(cfg, args, worst, "this run")
     support = check_tool_support(create_llm(cfg), probe=cfg.provider != "fake")
     print(f"tool calling: {support.status}")
     embedder = _make_embedder(cfg, args.variant)
     spec = RunSpec(bug, args.split, args.style, args.variant, args.condition, 0)
-    run_dir = new_run_dir(f"{bug.id}-{args.variant}")
-    rec = run_one(spec, cfg, limits, embedder, run_dir, "single")
+    if args.into:  # keep this run together with an experiment folder, so one report covers both
+        into = Path(args.into)
+        run_dir = into / "runs" / spec.key.replace("|", "_")
+        eid = args.id or into.name
+    else:
+        run_dir, eid = new_run_dir(f"{bug.id}-{args.variant}"), "single"
+    rec = run_one(spec, cfg, limits, embedder, run_dir, eid)
     if embedder is not None:
         embedder.save()
+    if args.into:
+        Path(args.into).mkdir(parents=True, exist_ok=True)
+        with (Path(args.into) / "records.jsonl").open("a") as f:
+            f.write(rec.model_dump_json() + "\n")
+    if rec.outcome != "completed":
+        print(f"\nNOT RUN (provider limit, {rec.provider_limit_kind}): {rec.error}")
+        print("This is not an agent failure. Wait and run the same command again.")
+        return 0
     print(f"\nstatus: {rec.status} ({rec.stop_reason})   fixed (whole suite): {rec.verified_fixed}")
     print(f"tool calls {rec.tool_calls}, model calls {rec.llm_calls}, tokens {rec.tokens_in}/{rec.tokens_out}, "
           f"cost ${rec.cost_usd:.4f}, seconds {rec.seconds}")
@@ -269,7 +291,13 @@ def _experiment_config(args: argparse.Namespace, limits):
 def _print_plan(plan: dict) -> None:
     print(f"split: {plan['split']}   bugs: {plan['bugs']}   runs: {plan['runs']}   model: {plan['provider']}/{plan['model']}")
     print(f"per-run cost cap: {plan['per_run_cap_usd']}   total cost cap: {plan['total_cap_usd']}")
-    if plan["prices_known"]:
+    lim = plan["limits"]
+    print(f"limits per run: {lim['max_tool_calls']} tool calls, {lim['max_tokens']:,} tokens, {lim['timeout_s']}s, "
+          f"{lim['max_attempts']} patch attempt(s)")
+    if plan["free"]:
+        print("price is 0 (free tier or local model): no money can be spent. Free tiers have daily and "
+              "per-minute request limits; runs refused by the provider are reported as 'not run'.")
+    elif plan["prices_known"]:
         print(f"typical run (my size assumption, not measured): ${plan['typical_run_usd']}   "
               f"typical total: ${plan['typical_total_usd']}   worst case: ${plan['worst_case_usd']}")
     else:
@@ -380,6 +408,8 @@ def main(argv: list[str] | None = None) -> int:
     ar.add_argument("--style", default="vague", choices=["specific", "vague"])
     ar.add_argument("--condition", default="A", choices=["A", "B"], help="A realistic, B blind tests")
     ar.add_argument("--max-attempts", type=int, default=1)
+    ar.add_argument("--into", help="Save the result inside this experiment folder (for one shared report)")
+    ar.add_argument("--id", help="Experiment id to stamp on the record (default: the folder name)")
     ar.add_argument("--approve-budget", type=float, help="Dollars you approved (paid providers only)")
     ar.set_defaults(func=cmd_agent_run)
 

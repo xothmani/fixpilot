@@ -36,6 +36,16 @@ strings (for example `"0.00000008"`), and a `supported_parameters` list that inc
 models that support tool calling. FixPilot reads `supported_parameters` for its free tool-support
 check. Prices differ per model, so look the model up there and multiply by 1,000,000.
 
+**Google Gemini (free tier)**, read on 2026-11-08 at https://aistudio.google.com/docs/pricing,
+/docs/models, /docs/openai and /docs/rate-limits (the older ai.google.dev addresses redirect there).
+These were read through a summarising fetch tool, so treat the details as "as the pages say", not as
+a raw copy. Findings: the Flash and Flash-Lite models are free of charge for input and output on the
+free tier, and Google may use free-tier data to improve its products. Base URL for the OpenAI
+library: `https://generativelanguage.googleapis.com/v1beta/openai/`. Current stable Flash model id
+on the models page: `gemini-3.6-flash`. The pages do not list free-tier request or token limits;
+those are on your own dashboard at https://aistudio.google.com/rate-limit. Paid prices are not
+needed for the free tier and are not recorded here.
+
 ## Not verified
 
 These pages were fetched through a summarising tool, which gave partial or unreliable results, so I

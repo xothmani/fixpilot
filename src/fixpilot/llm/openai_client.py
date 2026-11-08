@@ -16,6 +16,7 @@ from .base import (
     LLMResponse,
     Message,
     Prices,
+    Retrier,
     ToolCall,
     ToolResultsMsg,
     ToolSupport,
@@ -35,17 +36,23 @@ def _estimate_tokens(text: str) -> int:
 class OpenAICompatClient:
     provider = "openai_compat"
 
-    def __init__(self, cfg: LLMConfig, sdk: Any = None):
+    def __init__(self, cfg: LLMConfig, sdk: Any = None, retrier: Retrier | None = None):
         self.cfg = cfg
         self.model = cfg.model
         self.prices: Prices = cfg.prices
         if sdk is None:
             import openai
 
-            sdk = openai.OpenAI(
+            sdk = openai.OpenAI(  # retries are done by our own Retrier, so the SDK does none
                 api_key=cfg.api_key.get() if cfg.api_key else "not-needed-for-local-server",
-                base_url=cfg.base_url, timeout=cfg.timeout_s, max_retries=2)
+                base_url=cfg.base_url, timeout=cfg.timeout_s, max_retries=0)
         self._sdk = sdk
+        self._retrier = retrier or Retrier(cfg.retry_policy())
+
+    @property
+    def waited_s(self) -> float:
+        """Seconds spent waiting for rate limits and pacing so far."""
+        return self._retrier.waited_s
 
     def _convert(self, system: str, messages: list[Message]) -> list[dict]:
         out: list[dict] = [{"role": "system", "content": system}]
@@ -81,7 +88,9 @@ class OpenAICompatClient:
             kwargs["temperature"] = self.cfg.temperature
         start = time.monotonic()
         try:
-            resp = self._sdk.chat.completions.create(**kwargs)
+            resp = self._retrier.call(lambda: self._sdk.chat.completions.create(**kwargs))
+        except LLMError:
+            raise  # includes ProviderLimitError
         except Exception as e:  # noqa: BLE001 - every SDK error becomes one safe LLMError
             status = getattr(e, "status_code", None)
             raise LLMError(f"{self.cfg.base_url_host or 'provider'} call failed "
@@ -122,7 +131,11 @@ class OpenAICompatClient:
         else:
             details = getattr(u, "prompt_tokens_details", None)
             cached = getattr(details, "cached_tokens", 0) or 0
-            usage = Usage(max(0, u.prompt_tokens - cached), u.completion_tokens or 0, cached, 0)
+            out_tokens = u.completion_tokens or 0
+            total = getattr(u, "total_tokens", None)
+            if isinstance(total, int):  # thinking tokens are in total_tokens even if not in completion_tokens
+                out_tokens = max(out_tokens, total - u.prompt_tokens)
+            usage = Usage(max(0, u.prompt_tokens - cached), out_tokens, cached, 0)
         return LLMResponse(AssistantMsg(text, calls, None, self.provider), stop, usage, latency, detail)
 
     def metadata_tool_support(self) -> ToolSupport:
@@ -132,8 +145,8 @@ class OpenAICompatClient:
         except Exception as e:  # noqa: BLE001 - metadata is optional, never fatal
             return ToolSupport("unknown", f"could not list models ({type(e).__name__})")
         for m in models:
-            if getattr(m, "id", None) != self.model:
-                continue
+            if str(getattr(m, "id", "")).removeprefix("models/") != self.model.removeprefix("models/"):
+                continue  # Gemini lists ids as 'models/<name>'
             extra = getattr(m, "model_extra", None) or {}
             params = extra.get("supported_parameters") or getattr(m, "supported_parameters", None)
             if params is None:
