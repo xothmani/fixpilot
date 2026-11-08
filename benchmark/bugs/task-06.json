@@ -1,0 +1,21 @@
+{
+  "id": "task-06",
+  "repo": "taskboard",
+  "status": "proposed",
+  "bug_type": "small_logic_error",
+  "difficulty": "medium",
+  "file": "taskboard/timetracking.py",
+  "function": "round_up_minutes",
+  "description": "Always rounds up to the NEXT multiple, so exact multiples are increased by a full step.",
+  "mutation": {
+    "old": "    return -(-minutes // step) * step",
+    "new": "    return (minutes // step + 1) * step"
+  },
+  "failing_tests": [
+    "tests/test_recurrence_time.py::test_round_up[0-0]",
+    "tests/test_recurrence_time.py::test_round_up[15-15]",
+    "tests/test_recurrence_time.py::test_round_up[60-60]"
+  ],
+  "report_specific": "round_up_minutes(15) returns 30 instead of 15, and round_up_minutes(0) returns 15 instead of 0. Values that are already a multiple of the step should not change.",
+  "report_vague": "Invoices charge an extra 15 minutes whenever the logged time was already a round number."
+}

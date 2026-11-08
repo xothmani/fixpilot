@@ -1,0 +1,19 @@
+{
+  "id": "task-04",
+  "repo": "taskboard",
+  "status": "proposed",
+  "bug_type": "missing_check",
+  "difficulty": "easy",
+  "file": "taskboard/reports.py",
+  "function": "completion_rate",
+  "description": "Removes the empty list check, causing a division by zero.",
+  "mutation": {
+    "old": "    if not tasks:\n        return 0.0\n    return sum(1 for t in tasks if t.status == \"done\") / len(tasks)",
+    "new": "    return sum(1 for t in tasks if t.status == \"done\") / len(tasks)"
+  },
+  "failing_tests": [
+    "tests/test_stats_reports.py::test_completion_and_counts"
+  ],
+  "report_specific": "completion_rate([]) raises ZeroDivisionError. It should return 0.0 for a project with no tasks.",
+  "report_vague": "A brand new project with no tasks in it makes the progress page crash."
+}

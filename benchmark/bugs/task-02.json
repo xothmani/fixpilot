@@ -1,0 +1,19 @@
+{
+  "id": "task-02",
+  "repo": "taskboard",
+  "status": "proposed",
+  "bug_type": "wrong_operator",
+  "difficulty": "medium",
+  "file": "taskboard/stats.py",
+  "function": "median",
+  "description": "/ became //, so the median of an even number of values loses its fraction.",
+  "mutation": {
+    "old": "return (ordered[mid - 1] + ordered[mid]) / 2",
+    "new": "return (ordered[mid - 1] + ordered[mid]) // 2"
+  },
+  "failing_tests": [
+    "tests/test_stats_reports.py::test_mean_median"
+  ],
+  "report_specific": "median([4, 1, 2, 3]) returns 2 instead of 2.5.",
+  "report_vague": "The report shows the wrong typical completion time whenever we have an even number of finished tasks."
+}

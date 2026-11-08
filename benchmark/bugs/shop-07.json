@@ -1,0 +1,19 @@
+{
+  "id": "shop-07",
+  "repo": "shopkit",
+  "status": "proposed",
+  "bug_type": "small_logic_error",
+  "difficulty": "medium",
+  "file": "shopkit/history.py",
+  "function": "latest_order",
+  "description": "max became min, so the oldest order is returned.",
+  "mutation": {
+    "old": "    return max(orders, key=lambda o: (o.created_on, o.id))",
+    "new": "    return min(orders, key=lambda o: (o.created_on, o.id))"
+  },
+  "failing_tests": [
+    "tests/test_reports_history.py::test_customer_and_latest"
+  ],
+  "report_specific": "latest_order returns the oldest order instead of the most recent one.",
+  "report_vague": "The customer account page shows their very first order as their most recent order."
+}

@@ -1,0 +1,19 @@
+{
+  "id": "shop-04",
+  "repo": "shopkit",
+  "status": "proposed",
+  "bug_type": "off_by_one",
+  "difficulty": "easy",
+  "file": "shopkit/pagination.py",
+  "function": "paginate",
+  "description": "Page numbers are treated as starting at 0, so every page is shifted by one page.",
+  "mutation": {
+    "old": "    start = (page - 1) * per_page",
+    "new": "    start = page * per_page"
+  },
+  "failing_tests": [
+    "tests/test_listing.py::test_paginate_basic"
+  ],
+  "report_specific": "paginate(list(range(1, 11)), 1, 4) returns [5, 6, 7, 8] instead of [1, 2, 3, 4]. Page 1 should be the first page.",
+  "report_vague": "The product list skips the first few items, and the last page of results is empty."
+}

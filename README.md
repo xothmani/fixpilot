@@ -6,8 +6,8 @@ Given a bug report and a small Python repo, FixPilot will find the likely buggy 
 run the tests in a locked sandbox, retry if needed, and write a report. A human approves or
 rejects the change. The agent never pushes code by itself.
 
-**Status: Stage 1 of 9 (project setup and sandbox).** There is no agent yet. This stage only
-provides the safe test runner and the sample repos the agent will later work on.
+**Status: Stage 2 of 9 (bug benchmark v1).** There is no agent yet. So far there is a safe test
+runner, three sample repos, and 15 drafted bugs waiting for human review.
 
 ## Quick start
 
@@ -80,18 +80,40 @@ right file is a real search problem, which is what makes retrieval worth measuri
 src/fixpilot/
   config.py            settings from environment variables
   cli.py               the `fixpilot` command
+  benchmark.py         loads bugs, plants them in a copy, validates them
   sandbox/
     workspace.py       makes a temporary copy of a repo
     docker_runner.py   runs pytest inside the locked container
 docker/Dockerfile.sandbox   the sandbox image (Python 3.12 and pytest only)
 benchmark/repos/            the sample repos
+benchmark/bugs/             one JSON file per planted bug
 tests/                      tests for FixPilot itself
 ```
+
+## The bug benchmark (`benchmark/bugs`)
+
+Each bug is one JSON file. It holds one exact text replacement that is applied to a COPY of a clean
+sample repo, plus the ground truth (which file and function hold the bug, which tests fail) and
+two versions of the bug report: a specific one written like a developer, and a vague one written
+like a user. The vague reports never name the function or file.
+
+A bug has a `status`. New bugs start as `proposed`. Only bugs a human has reviewed and marked
+`approved` count in benchmark runs.
+
+```bash
+fixpilot bench list                      # show all bugs
+fixpilot bench validate                  # plant each bug in the sandbox and check it fails
+fixpilot bench validate --id shop-02     # check one bug
+fixpilot bench validate --status approved
+```
+
+`validate` first checks that each clean repo passes, then for every bug confirms that the tests
+listed in `failing_tests` really fail and that no other test fails.
 
 ## Roadmap
 
 1. Project setup and sandbox (done)
-2. Bug benchmark v1 (15 planted bugs with ground truth)
+2. Bug benchmark v1, 15 planted bugs with ground truth (drafted, waiting for review)
 3. Code search (RAG) and retrieval recall
 4. Agent v1 (LangGraph)
 5. Retry loop, report, human approval

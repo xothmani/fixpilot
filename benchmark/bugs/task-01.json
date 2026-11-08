@@ -1,0 +1,19 @@
+{
+  "id": "task-01",
+  "repo": "taskboard",
+  "status": "proposed",
+  "bug_type": "off_by_one",
+  "difficulty": "medium",
+  "file": "taskboard/archive.py",
+  "function": "archivable",
+  "description": "> became >=, so tasks finished exactly N days ago are archived one day early.",
+  "mutation": {
+    "old": "(today - t.done_on).days > older_than_days",
+    "new": "(today - t.done_on).days >= older_than_days"
+  },
+  "failing_tests": [
+    "tests/test_text.py::test_archive_boundary"
+  ],
+  "report_specific": "archivable() with older_than_days=30 includes a task that was finished exactly 30 days ago. Only tasks finished MORE than 30 days ago should be archived.",
+  "report_vague": "Finished tasks disappear from the board a day too early, and people lose tasks they still wanted to look at."
+}

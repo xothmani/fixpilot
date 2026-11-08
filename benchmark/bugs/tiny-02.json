@@ -1,0 +1,19 @@
+{
+  "id": "tiny-02",
+  "repo": "tinyutils",
+  "status": "proposed",
+  "bug_type": "missing_check",
+  "difficulty": "easy",
+  "file": "tinyutils/lists.py",
+  "function": "last",
+  "description": "Removes the empty list check, so the default is never used.",
+  "mutation": {
+    "old": "    return items[-1] if items else default",
+    "new": "    return items[-1]"
+  },
+  "failing_tests": [
+    "tests/test_lists.py::test_last"
+  ],
+  "report_specific": "last([], default='x') raises IndexError instead of returning the default value 'x'.",
+  "report_vague": "Asking for the final item of an empty list crashes my script instead of giving me my fallback value."
+}

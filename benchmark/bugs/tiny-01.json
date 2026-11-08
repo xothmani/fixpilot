@@ -1,0 +1,19 @@
+{
+  "id": "tiny-01",
+  "repo": "tinyutils",
+  "status": "proposed",
+  "bug_type": "off_by_one",
+  "difficulty": "easy",
+  "file": "tinyutils/strings.py",
+  "function": "truncate",
+  "description": "Keeps one character too many before the suffix, so the result is one longer than max_len.",
+  "mutation": {
+    "old": "    return text[: max_len - len(suffix)] + suffix",
+    "new": "    return text[: max_len - len(suffix) + 1] + suffix"
+  },
+  "failing_tests": [
+    "tests/test_strings.py::test_truncate_adds_suffix"
+  ],
+  "report_specific": "truncate('hello world', 8) returns 'hello w...' (11 characters). The result must be at most 8 characters long, so I expected 'hello...'.",
+  "report_vague": "Shortened text sometimes comes out longer than the limit I set, and it breaks my page layout."
+}

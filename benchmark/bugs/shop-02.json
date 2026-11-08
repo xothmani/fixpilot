@@ -1,0 +1,20 @@
+{
+  "id": "shop-02",
+  "repo": "shopkit",
+  "status": "proposed",
+  "bug_type": "wrong_variable",
+  "difficulty": "hard",
+  "file": "shopkit/checkout.py",
+  "function": "build_quote",
+  "description": "Tax is computed on the full subtotal instead of the amount after discounts.",
+  "mutation": {
+    "old": "    tax = tax_cents(taxable, region)",
+    "new": "    tax = tax_cents(subtotal, region)"
+  },
+  "failing_tests": [
+    "tests/test_checkout.py::test_bulk_discount_in_quote",
+    "tests/test_checkout.py::test_quote_with_coupon"
+  ],
+  "report_specific": "In build_quote, a cart with 2 x $12.00 mugs shipped to US-NY with a 10 percent coupon shows tax of $1.92. Tax should be $1.73 because it must be charged on the price after the discount.",
+  "report_vague": "Customers who use a promo code or buy in bulk are charged more sales tax than they should. The order totals look too high."
+}

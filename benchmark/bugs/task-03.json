@@ -1,0 +1,20 @@
+{
+  "id": "task-03",
+  "repo": "taskboard",
+  "status": "proposed",
+  "bug_type": "wrong_variable",
+  "difficulty": "hard",
+  "file": "taskboard/recurrence.py",
+  "function": "add_months",
+  "description": "Uses the old month instead of the new month when limiting the day, so short months crash.",
+  "mutation": {
+    "old": "day = min(d.day, calendar.monthrange(year, month)[1])",
+    "new": "day = min(d.day, calendar.monthrange(year, d.month)[1])"
+  },
+  "failing_tests": [
+    "tests/test_recurrence_time.py::test_add_months_clamps_day",
+    "tests/test_recurrence_time.py::test_occurrences"
+  ],
+  "report_specific": "add_months(date(2025, 1, 31), 1) raises ValueError (day is out of range for month) instead of returning 2025-02-28.",
+  "report_vague": "Our monthly repeating task that starts at the end of a month crashes the app when it tries to create the next one."
+}

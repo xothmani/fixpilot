@@ -1,0 +1,19 @@
+{
+  "id": "shop-03",
+  "repo": "shopkit",
+  "status": "proposed",
+  "bug_type": "missing_check",
+  "difficulty": "easy",
+  "file": "shopkit/reports.py",
+  "function": "sales_summary",
+  "description": "Removes the guard against an empty list, causing a division by zero.",
+  "mutation": {
+    "old": "    average = revenue // len(valid) if valid else 0",
+    "new": "    average = revenue // len(valid)"
+  },
+  "failing_tests": [
+    "tests/test_reports_history.py::test_sales_summary_empty"
+  ],
+  "report_specific": "sales_summary([]) raises ZeroDivisionError. With no orders it should return orders=0, revenue_cents=0 and average_cents=0.",
+  "report_vague": "The sales dashboard crashes on a day when nothing was sold."
+}

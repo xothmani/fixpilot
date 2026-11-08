@@ -1,0 +1,19 @@
+{
+  "id": "shop-01",
+  "repo": "shopkit",
+  "status": "proposed",
+  "bug_type": "wrong_operator",
+  "difficulty": "medium",
+  "file": "shopkit/coupons.py",
+  "function": "is_expired",
+  "description": "> became >=, so a coupon is treated as expired on its last valid day.",
+  "mutation": {
+    "old": "return self.expires_on is not None and today > self.expires_on",
+    "new": "return self.expires_on is not None and today >= self.expires_on"
+  },
+  "failing_tests": [
+    "tests/test_coupons.py::test_expiry_day_still_valid"
+  ],
+  "report_specific": "A coupon with expires_on 2025-03-15 is rejected as expired when it is used on 2025-03-15. It should still work on its last day and only fail from 2025-03-16.",
+  "report_vague": "A customer says their discount code stopped working on the very day it was supposed to end."
+}
