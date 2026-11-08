@@ -34,6 +34,8 @@ def parse_duration(token: str) -> int:
 
 
 def parse_quick_add(text: str) -> QuickAdd:
+    """Tags are stored in lowercase and without duplicates. Priority, assignee, due date and
+    estimate are taken from their markers; the remaining words form the title."""
     result = QuickAdd(title="")
     title_words = []
     for token in text.split():

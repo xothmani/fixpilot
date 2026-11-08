@@ -1,7 +1,7 @@
 {
   "id": "shop-03",
   "repo": "shopkit",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "missing_check",
   "difficulty": "easy",
   "file": "shopkit/reports.py",

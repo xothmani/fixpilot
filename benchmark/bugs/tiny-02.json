@@ -1,7 +1,7 @@
 {
   "id": "tiny-02",
   "repo": "tinyutils",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "missing_check",
   "difficulty": "easy",
   "file": "tinyutils/lists.py",

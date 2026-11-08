@@ -1,7 +1,7 @@
 {
   "id": "tiny-01",
   "repo": "tinyutils",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "off_by_one",
   "difficulty": "easy",
   "file": "tinyutils/strings.py",

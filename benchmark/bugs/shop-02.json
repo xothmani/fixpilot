@@ -1,7 +1,7 @@
 {
   "id": "shop-02",
   "repo": "shopkit",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "wrong_variable",
   "difficulty": "hard",
   "file": "shopkit/checkout.py",

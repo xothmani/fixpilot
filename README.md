@@ -7,7 +7,7 @@ run the tests in a locked sandbox, retry if needed, and write a report. A human 
 rejects the change. The agent never pushes code by itself.
 
 **Status: Stage 2 of 9 (bug benchmark v1).** There is no agent yet. So far there is a safe test
-runner, three sample repos, and 15 drafted bugs waiting for human review.
+runner, three sample repos, and 15 planted bugs (12 reviewed and approved, 3 waiting for review).
 
 ## Quick start
 
@@ -113,7 +113,7 @@ listed in `failing_tests` really fail and that no other test fails.
 ## Roadmap
 
 1. Project setup and sandbox (done)
-2. Bug benchmark v1, 15 planted bugs with ground truth (drafted, waiting for review)
+2. Bug benchmark v1, 15 planted bugs with ground truth (3 still waiting for review)
 3. Code search (RAG) and retrieval recall
 4. Agent v1 (LangGraph)
 5. Retry loop, report, human approval

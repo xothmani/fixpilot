@@ -26,4 +26,5 @@ class CartItem:
 
     @property
     def line_weight_g(self) -> int:
+        """Weight of the whole line: the weight of one unit times the quantity."""
         return self.product.weight_g * self.quantity

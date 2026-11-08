@@ -1,7 +1,7 @@
 {
   "id": "task-06",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "small_logic_error",
   "difficulty": "medium",
   "file": "taskboard/timetracking.py",

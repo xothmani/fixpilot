@@ -1,7 +1,7 @@
 {
   "id": "task-04",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "missing_check",
   "difficulty": "easy",
   "file": "taskboard/reports.py",

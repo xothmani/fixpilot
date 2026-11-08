@@ -1,7 +1,7 @@
 {
   "id": "shop-01",
   "repo": "shopkit",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "wrong_operator",
   "difficulty": "medium",
   "file": "shopkit/coupons.py",

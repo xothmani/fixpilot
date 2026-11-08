@@ -24,6 +24,8 @@ BUG_TYPES = {
     "wrong_variable",
     "incorrect_condition",
     "small_logic_error",
+    "sort_tie_break",
+    "case_sensitivity",
 }
 STATUSES = {"proposed", "approved"}  # only "approved" bugs count in benchmark runs
 

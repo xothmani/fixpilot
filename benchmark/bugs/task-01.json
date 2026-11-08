@@ -1,7 +1,7 @@
 {
   "id": "task-01",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "off_by_one",
   "difficulty": "medium",
   "file": "taskboard/archive.py",

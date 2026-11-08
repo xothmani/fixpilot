@@ -1,0 +1,19 @@
+{
+  "id": "task-08",
+  "repo": "taskboard",
+  "status": "proposed",
+  "bug_type": "sort_tie_break",
+  "difficulty": "medium",
+  "file": "taskboard/tags.py",
+  "function": "popular_tags",
+  "description": "The alphabetical tie-break was removed, so tags used equally often come out in insertion order.",
+  "mutation": {
+    "old": "    ranked = sorted(counts, key=lambda tag: (-counts[tag], tag))",
+    "new": "    ranked = sorted(counts, key=lambda tag: -counts[tag])"
+  },
+  "failing_tests": [
+    "tests/test_projects_tags_users.py::test_tag_stats"
+  ],
+  "report_specific": "popular_tags returns the wrong order when two tags are used the same number of times. With 'backend' and 'docs' both used twice, the result is ['docs', 'backend'], but ties should be listed alphabetically: ['backend', 'docs'].",
+  "report_vague": "The tag suggestions list seems to shuffle: tags that are used equally often appear in an order that looks random and depends on how the tasks were added."
+}

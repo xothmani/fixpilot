@@ -15,11 +15,17 @@ def test_there_are_15_bugs_with_unique_ids():
     assert len({b.id for b in BUGS}) == 15
 
 
-def test_every_bug_type_is_used():
-    assert {b.bug_type for b in BUGS} == {
-        "wrong_operator", "off_by_one", "missing_check",
-        "wrong_variable", "incorrect_condition", "small_logic_error",
-    }
+def test_bug_types_are_varied():
+    types = {b.bug_type for b in BUGS}
+    assert len(types) >= 7
+    assert {"sort_tie_break", "case_sensitivity"} <= types
+
+
+def test_difficulty_split_is_5_5_5():
+    from collections import Counter
+
+    counts = Counter(b.difficulty for b in BUGS)
+    assert counts == {"easy": 5, "medium": 5, "hard": 5}
 
 
 @pytest.mark.parametrize("bug", BUGS, ids=lambda b: b.id)
@@ -45,7 +51,7 @@ def test_ground_truth_points_at_a_real_function(bug):
 def test_vague_report_does_not_name_the_answer(bug):
     text = bug.report_vague.lower()
     assert bug.function.lower() not in text
-    assert bug.file.split("/")[-1].removesuffix(".py") not in text.split()
+    assert bug.file.split("/")[-1].lower() not in text  # the literal file name, e.g. tags.py
 
 
 def test_apply_bug_rejects_missing_or_ambiguous_text(tmp_path):

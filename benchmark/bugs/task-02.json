@@ -1,7 +1,7 @@
 {
   "id": "task-02",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "wrong_operator",
   "difficulty": "medium",
   "file": "taskboard/stats.py",

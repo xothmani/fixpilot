@@ -20,7 +20,11 @@ class Coupon:
     used: int = 0
 
     def is_expired(self, today: date) -> bool:
-        """A coupon is still valid on its expiry date and invalid the day after."""
+        """True only AFTER the expiry date. `expires_on` is the last day the coupon works.
+
+        Example: with expires_on = 2025-03-15, is_expired(2025-03-15) is False and
+        is_expired(2025-03-16) is True.
+        """
         return self.expires_on is not None and today > self.expires_on
 
     def is_exhausted(self) -> bool:

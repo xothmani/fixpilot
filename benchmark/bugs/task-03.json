@@ -1,7 +1,7 @@
 {
   "id": "task-03",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "wrong_variable",
   "difficulty": "hard",
   "file": "taskboard/recurrence.py",

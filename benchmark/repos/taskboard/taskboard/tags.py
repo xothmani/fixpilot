@@ -29,6 +29,8 @@ def tag_counts(tasks: list[Task]) -> dict[str, int]:
 
 
 def popular_tags(tasks: list[Task], n: int = 3) -> list[str]:
+    """The `n` most used tags, most used first. Tags used equally often are listed
+    alphabetically."""
     counts = tag_counts(tasks)
     ranked = sorted(counts, key=lambda tag: (-counts[tag], tag))
     return ranked[:n]

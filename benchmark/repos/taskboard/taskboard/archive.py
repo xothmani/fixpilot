@@ -9,7 +9,11 @@ from .tasks import TaskStore
 
 
 def archivable(tasks: list[Task], today: date, older_than_days: int = 30) -> list[Task]:
-    """Done tasks finished MORE than `older_than_days` days ago."""
+    """Done tasks finished MORE than `older_than_days` days ago.
+
+    Example with older_than_days = 30: a task finished exactly 30 days ago is NOT archivable
+    yet, a task finished 31 days ago is.
+    """
     return [t for t in tasks
             if t.status == "done" and t.done_on is not None
             and (today - t.done_on).days > older_than_days]
