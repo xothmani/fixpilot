@@ -17,6 +17,7 @@ from .base import (
     ToolSupport,
     Usage,
     UserMsg,
+    describe_error,
 )
 from .config import LLMConfig
 
@@ -49,6 +50,10 @@ class AnthropicClient:
     @property
     def requests_sent(self) -> int:
         return self._retrier.attempts
+
+    @property
+    def rate_limit_hits(self) -> int:
+        return self._retrier.limit_hits
 
     @property
     def waited_s(self) -> float:
@@ -90,7 +95,7 @@ class AnthropicClient:
         except Exception as e:  # noqa: BLE001 - every SDK error becomes one safe LLMError
             status = getattr(e, "status_code", None)
             raise LLMError(f"Anthropic call failed ({type(e).__name__}"
-                           f"{f', HTTP {status}' if status else ''}): {str(e)[:300]}") from None
+                           f"{f', HTTP {status}' if status else ''}): {describe_error(e)}") from None
         latency = time.monotonic() - start
 
         text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")

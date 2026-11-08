@@ -22,26 +22,12 @@ from .base import (
     ToolSupport,
     Usage,
     UserMsg,
+    describe_error,
 )
 from .config import LLMConfig
 
 _STOP = {"tool_calls": "tool_use", "function_call": "tool_use", "stop": "end_turn",
          "length": "max_tokens", "content_filter": "refusal"}
-
-
-def _error_detail(e: Exception) -> str:
-    """The error text plus the provider's own explanation (the body), shortened.
-
-    Some servers send a JSON list instead of an object, which makes the SDK's message just
-    'Error code: 400'. The body is where the reason is.
-    """
-    text = str(e)[:200]
-    body = getattr(e, "body", None)
-    if body is None:
-        body = getattr(getattr(e, "response", None), "text", None)
-    if body:
-        text += f" | provider said: {str(body)[:600]}"
-    return text
 
 
 def _estimate_tokens(text: str) -> int:
@@ -68,6 +54,10 @@ class OpenAICompatClient:
     def requests_sent(self) -> int:
         """Requests sent to the provider, including retries after a 429."""
         return self._retrier.attempts
+
+    @property
+    def rate_limit_hits(self) -> int:
+        return self._retrier.limit_hits
 
     @property
     def waited_s(self) -> float:
@@ -116,7 +106,7 @@ class OpenAICompatClient:
             status = getattr(e, "status_code", None)
             raise LLMError(f"{self.cfg.base_url_host or 'provider'} call failed "
                            f"({type(e).__name__}{f', HTTP {status}' if status else ''}): "
-                           f"{_error_detail(e)}") from None
+                           f"{describe_error(e)}") from None
         latency = time.monotonic() - start
         if not getattr(resp, "choices", None):
             raise LLMError("the provider returned no choices")

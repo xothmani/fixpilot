@@ -179,7 +179,6 @@ def _require_approval(cfg, args, needed_usd: float | None, what: str) -> None:
 
 
 def cmd_llm_check(args: argparse.Namespace) -> int:
-    from fixpilot.llm import check_tool_support, create_llm
     from fixpilot.llm.base import Usage
     from fixpilot.llm.support import PROBE_ESTIMATED_TOKENS
 
@@ -202,11 +201,30 @@ def cmd_llm_check(args: argparse.Namespace) -> int:
         return 0
     probe_cost = cfg.prices.cost(Usage(PROBE_ESTIMATED_TOKENS, 100)) if cfg.prices.known else None
     _require_approval(cfg, args, max(probe_cost or 0.0, 0.01) if probe_cost is not None else None, "the tool-call probe")
-    support = check_tool_support(create_llm(cfg), probe=True)
+    support = _tool_support(cfg, force=True)
     from fixpilot.agent.tracing import redact
 
     print(f"tool calling: {support.status} ({redact(support.detail)})")
     return 0
+
+
+def _tool_support(cfg, force: bool = False):
+    """Check tool calling. A positive result is remembered per model, so repeated runs do not spend
+    a request on the test call every time (free tiers have few requests per day)."""
+    import json as _json
+
+    from fixpilot.llm import ToolSupport, check_tool_support, create_llm
+
+    cache = PROJECT_ROOT / ".cache" / "tool_support.json"
+    key = f"{cfg.provider}|{cfg.base_url_host}|{cfg.model}"
+    known = _json.loads(cache.read_text()) if cache.exists() else {}
+    if not force and cfg.provider != "fake" and known.get(key) == "supported":
+        return ToolSupport("supported", "checked earlier; run `fixpilot llm check --probe` to check again")
+    result = check_tool_support(create_llm(cfg), probe=cfg.provider != "fake")
+    if result.status == "supported" and cfg.provider != "fake":
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(_json.dumps({**known, key: "supported"}, indent=2) + "\n")
+    return result
 
 
 def _make_embedder(cfg, variant: str):
@@ -221,7 +239,6 @@ def cmd_agent_run(args: argparse.Namespace) -> int:
     from fixpilot.agent.runner import RunSpec, run_one
     from fixpilot.agent.scripted import new_run_dir
     from fixpilot.benchmark import load_bugs, load_dev_bugs
-    from fixpilot.llm import check_tool_support, create_llm
 
     cfg, limits = _llm_setup()
     limits = limits.model_copy(update={"max_attempts": args.max_attempts})
@@ -239,7 +256,7 @@ def cmd_agent_run(args: argparse.Namespace) -> int:
         print(f"{cfg.provider}/{cfg.model}: this run can cost up to "
               f"{f'${worst:.2f}' if worst is not None else 'an unknown amount'} (per-run cap).")
     _require_approval(cfg, args, worst, "this run")
-    support = check_tool_support(create_llm(cfg), probe=cfg.provider != "fake")
+    support = _tool_support(cfg)
     print(f"tool calling: {support.status}")
     embedder = _make_embedder(cfg, args.variant)
     spec = RunSpec(bug, args.split, args.style, args.variant, args.condition, 0)

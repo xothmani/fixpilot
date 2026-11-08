@@ -94,6 +94,7 @@ class RunRecord(BaseModel):
     patch_lines: int = 0  # lines added plus removed
     reference_lines: int = 0  # the same for the smallest known fix
     requests_sent: int = 0  # requests to the provider, including retries after a 429
+    rate_limit_hits: int = 0  # how many of them were refused with a rate or quota error
     provider_limit_kind: str | None = None  # 'rate' or 'daily'
     waited_s: float = 0.0  # seconds spent waiting for provider rate limits
 
@@ -169,6 +170,7 @@ def run_one(spec: RunSpec, llm_cfg: LLMConfig, limits: Limits, embedder: Embedde
         first_query=fq, first_query_origin=fq_origin, leak_channels=scoring.leak_channels(bug, ctx.tracer.records),
         patch_lines=scoring.patch_size(diff), reference_lines=scoring.reference_size(bug),
         requests_sent=getattr(llm, "requests_sent", totals.llm_calls),
+        rate_limit_hits=getattr(llm, "rate_limit_hits", 0),
         error=totals.error, outcome="not_run_provider_limit" if blocked else "completed",
         provider_limit_kind=totals.provider_limit, waited_s=round(totals.waited_s, 2),
     )

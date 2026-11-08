@@ -162,7 +162,9 @@ def _section(all_rows: list[RunRecord], planned_per_cell: int | None) -> list[st
     out.append("")
 
     sent = sum(r.requests_sent for r in all_rows)
-    out.append(f"REQUESTS SENT TO THE PROVIDER in these runs: {sent} (retries after a 429 included)")
+    refused = sum(r.rate_limit_hits for r in all_rows)
+    out.append(f"REQUESTS SENT TO THE PROVIDER in these runs: {sent} (retries after a 429 included), "
+               f"of which refused with a rate or quota error: {refused}")
     out.append("")
 
     out.append("COST AND EFFORT (mean per run)")

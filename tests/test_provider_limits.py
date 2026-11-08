@@ -392,3 +392,100 @@ def test_a_group_with_only_refused_runs_still_reports(tmp_path, monkeypatch, _pr
     exp.run_experiment(cfg, fake_cfg(), progress=lambda _: None)
     text = format_report(exp.load_records(cfg.out_dir), cfg.out_dir)
     assert "No completed runs." in text and "NOT RUN (PROVIDER LIMIT)" in text
+
+
+# ------------------------------------------------------------------ the provider's explanation is kept
+
+
+class BodyError(HttpError):
+    def __init__(self, status, message, body, headers=None):
+        super().__init__(status, message, headers)
+        self.body = body
+
+
+DAILY_BODY = [{"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
+                         "message": "Quota exceeded: GenerateRequestsPerDayPerProjectPerModel-FreeTier, limit: 20"}}]
+MINUTE_BODY = [{"error": {"code": 429, "message": "Quota exceeded: GenerateRequestsPerMinutePerProjectPerModel-FreeTier"}}]
+
+
+def test_the_quota_name_in_the_body_decides_daily_versus_per_minute():
+    """The SDK message is just 'Error code: 429'. The reason is only in the body."""
+    assert classify_error(BodyError(429, "Error code: 429", DAILY_BODY)) == "limit_daily"
+    assert classify_error(BodyError(429, "Error code: 429", MINUTE_BODY)) == "limit_rate"
+    assert classify_error(BodyError(429, "Error code: 429", None)) == "limit_rate"
+
+
+def test_describe_error_keeps_body_and_retry_after():
+    from fixpilot.llm.base import describe_error
+
+    text = describe_error(BodyError(429, "Error code: 429", MINUTE_BODY, {"retry-after": "41"}))
+    assert "PerMinute" in text and "retry-after: 41s" in text and text.startswith("Error code: 429")
+    assert len(describe_error(BodyError(429, "x", "y" * 5000))) < 900
+
+
+def test_a_daily_quota_found_only_in_the_body_is_not_retried():
+    clock, calls = Clock(), []
+
+    def fn():
+        calls.append(1)
+        raise BodyError(429, "Error code: 429", DAILY_BODY)
+
+    with pytest.raises(ProviderLimitError) as err:
+        retrier(clock).call(fn)
+    assert err.value.kind == "daily" and len(calls) == 1 and "limit: 20" in str(err.value)
+
+
+def test_the_refusal_message_after_retries_names_the_quota():
+    clock = Clock()
+    with pytest.raises(ProviderLimitError) as err:
+        retrier(clock, retries=1).call(lambda: (_ for _ in ()).throw(BodyError(429, "Error code: 429", MINUTE_BODY)))
+    assert err.value.kind == "rate" and "GenerateRequestsPerMinute" in str(err.value)
+
+
+def test_rate_limit_responses_are_counted_separately_from_requests():
+    clock, n = Clock(), []
+
+    def fn():
+        n.append(1)
+        if len(n) <= 2:
+            raise HttpError(429, "slow")
+        return "ok"
+
+    r = retrier(clock)
+    r.call(fn)
+    assert r.attempts == 3 and r.limit_hits == 2
+    r.call(lambda: "fine")
+    assert r.attempts == 4 and r.limit_hits == 2
+
+
+def test_the_openai_client_exposes_both_counters():
+    client = OpenAICompatClient(LLMConfig.from_env(OAI), FakeOpenAISDK(o_response("ok")), retrier(Clock()))
+    client.generate("S", [UserMsg("q")], TOOLS)
+    assert (client.requests_sent, client.rate_limit_hits) == (1, 0)
+
+
+# ------------------------------------------------------------------ do not waste a free request on a repeat probe
+
+
+def test_a_positive_tool_check_is_remembered_and_a_negative_one_is_not(tmp_path, monkeypatch):
+    from fixpilot import cli, llm
+    from fixpilot.llm import ToolSupport
+
+    monkeypatch.setattr(cli, "PROJECT_ROOT", tmp_path)
+    cfg = LLMConfig.from_env(OAI)
+    calls, answer = [], {"v": ToolSupport("supported", "the model called the test tool")}
+    monkeypatch.setattr(llm, "create_llm", lambda c: object())
+    monkeypatch.setattr(llm, "check_tool_support", lambda client, probe=False: calls.append(probe) or answer["v"])
+
+    assert cli._tool_support(cfg).status == "supported" and calls == [True]  # first time: a real check
+    assert cli._tool_support(cfg).detail.startswith("checked earlier") and calls == [True]  # now remembered
+    cli._tool_support(cfg, force=True)
+    assert calls == [True, True]  # --probe forces a fresh check
+    assert "gemini-test" in (tmp_path / ".cache" / "tool_support.json").read_text()
+    assert "k" not in json.loads((tmp_path / ".cache" / "tool_support.json").read_text()).values()
+
+    other = LLMConfig.from_env({**OAI, "FIXPILOT_MODEL": "other-model"})
+    answer["v"] = ToolSupport("unknown", "no idea")
+    cli._tool_support(other)
+    cli._tool_support(other)
+    assert calls == [True, True, True, True]  # an unknown result is never remembered

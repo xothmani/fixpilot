@@ -35,11 +35,29 @@ def _status(exc: Exception) -> int | None:
     return code if isinstance(code, int) else None
 
 
+def describe_error(exc: Exception, limit: int = 600) -> str:
+    """The error text plus the provider's own explanation (the response body) and any Retry-After.
+
+    Some servers send a JSON list, which makes the SDK's message just 'Error code: 429'. The reason
+    (which quota, per minute or per day) is in the body, so it must be kept.
+    """
+    text = str(exc)[:200]
+    body = getattr(exc, "body", None)
+    if body is None:
+        body = getattr(getattr(exc, "response", None), "text", None)
+    if body:
+        text += f" | provider said: {str(body)[:limit]}"
+    hinted = _retry_after(exc)
+    if hinted is not None:
+        text += f" | retry-after: {hinted:g}s"
+    return text
+
+
 def classify_error(exc: Exception) -> str:
     """'limit_daily' | 'limit_rate' | 'transient' | 'other'."""
     status = _status(exc)
     name = type(exc).__name__.lower()
-    text = f"{name} {exc}".lower()
+    text = f"{name} {describe_error(exc, 2000)}".lower()
     if status == 429 or any(w in text for w in _LIMIT_WORDS):
         squashed = text.replace(" ", "").replace("_", "")
         return "limit_daily" if ("perday" in squashed or "daily" in squashed) else "limit_rate"
@@ -76,6 +94,7 @@ class Retrier:
         self._sleep, self._clock, self._jitter = sleep, clock, jitter
         self.waited_s = 0.0
         self.attempts = 0
+        self.limit_hits = 0  # responses that were rate or quota refusals
         self._last_start: float | None = None
 
     def _wait(self, seconds: float) -> None:
@@ -96,7 +115,9 @@ class Retrier:
                 kind = classify_error(e)
                 if kind == "other":
                     raise
-                what = f"{type(e).__name__}: {str(e)[:300]}"
+                what = f"{type(e).__name__}: {describe_error(e)}"
+                if kind.startswith("limit"):
+                    self.limit_hits += 1
                 if kind == "limit_daily":
                     raise ProviderLimitError(f"daily quota reached ({what})", "daily") from None
                 if attempt == p.retries:
