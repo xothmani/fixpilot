@@ -1,0 +1,19 @@
+{
+  "id": "dev-02",
+  "repo": "taskboard",
+  "status": "dev",
+  "bug_type": "small_logic_error",
+  "difficulty": "medium",
+  "file": "taskboard/estimates.py",
+  "function": "accuracy_percent",
+  "description": "Removes the floor at zero, so very wrong estimates give a negative accuracy.",
+  "mutation": {
+    "old": "    return max(0.0, 100 - abs(variance_percent(estimated, actual)))",
+    "new": "    return 100 - abs(variance_percent(estimated, actual))"
+  },
+  "failing_tests": [
+    "tests/test_estimates_deps.py::test_variance_and_accuracy"
+  ],
+  "report_specific": "accuracy_percent(100, 400) returns -200.0. The accuracy is documented to never go below 0.",
+  "report_vague": "Some estimate accuracy scores on the team page are negative, which makes no sense."
+}

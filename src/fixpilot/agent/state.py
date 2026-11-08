@@ -18,12 +18,18 @@ class Status(str, Enum):
     NEEDS_HUMAN = "needs_human"
 
 
+def _optional_float(raw: str | None, default: float | None) -> float | None:
+    if raw is None:
+        return default
+    return None if raw.strip().lower() in ("", "none", "off", "unlimited") else float(raw)
+
+
 class Limits(BaseModel):
     """Hard limits. The application enforces them, not the LLM."""
 
     max_attempts: int = 4  # patches that were actually applied
     max_tool_calls: int = 25
-    max_cost_usd: float = 0.25
+    max_cost_usd: float | None = 0.25  # None = no cost cap (then no prices are needed)
     max_tokens: int = 200_000  # input plus output, all LLM calls of the run
     timeout_s: int = 300  # wall clock for the whole run
 
@@ -34,7 +40,7 @@ class Limits(BaseModel):
         return cls(
             max_attempts=int(env.get("FIXPILOT_MAX_ATTEMPTS", d.max_attempts)),
             max_tool_calls=int(env.get("FIXPILOT_MAX_TOOL_CALLS", d.max_tool_calls)),
-            max_cost_usd=float(env.get("FIXPILOT_MAX_COST_USD", d.max_cost_usd)),
+            max_cost_usd=_optional_float(env.get("FIXPILOT_MAX_COST_USD"), d.max_cost_usd),
             max_tokens=int(env.get("FIXPILOT_MAX_TOKENS", d.max_tokens)),
             timeout_s=int(env.get("FIXPILOT_TIMEOUT_S", d.timeout_s)),
         )
@@ -128,7 +134,7 @@ class AgentState(BaseModel):
             return "max_tool_calls"
         if b.elapsed_s() >= lim.timeout_s:
             return "timeout"
-        if b.cost_usd >= lim.max_cost_usd:
+        if lim.max_cost_usd is not None and b.cost_usd >= lim.max_cost_usd:
             return "max_cost"
         if b.tokens >= lim.max_tokens:
             return "max_tokens"

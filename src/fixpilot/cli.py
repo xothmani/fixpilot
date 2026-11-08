@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
-from fixpilot.config import BENCHMARK_REPOS, SandboxConfig
+from fixpilot.config import BENCHMARK_REPOS, PROJECT_ROOT, SandboxConfig
 from fixpilot.sandbox import SandboxError, Workspace, build_image, run_pytest
 
 
@@ -42,9 +43,9 @@ def cmd_run_tests(args: argparse.Namespace) -> int:
 
 
 def cmd_bench_list(args: argparse.Namespace) -> int:
-    from fixpilot.benchmark import load_bugs
+    from fixpilot.benchmark import load_bugs, load_dev_bugs
 
-    bugs = load_bugs(args.status)
+    bugs = load_dev_bugs() if args.dev else load_bugs(args.status)
     print(f"{'ID':<10} {'REPO':<10} {'STATUS':<9} {'TYPE':<20} {'DIFF':<7} LOCATION")
     for b in bugs:
         print(f"{b.id:<10} {b.repo:<10} {b.status:<9} {b.bug_type:<20} {b.difficulty:<7} "
@@ -54,9 +55,9 @@ def cmd_bench_list(args: argparse.Namespace) -> int:
 
 
 def cmd_bench_validate(args: argparse.Namespace) -> int:
-    from fixpilot.benchmark import baseline_passes, load_bugs, validate_bug
+    from fixpilot.benchmark import baseline_passes, load_bugs, load_dev_bugs, validate_bug
 
-    bugs = load_bugs(args.status)
+    bugs = load_dev_bugs() if args.dev else load_bugs(args.status)
     if args.id:
         bugs = [b for b in bugs if b.id in args.id]
     for repo in sorted({b.repo for b in bugs}):
@@ -151,6 +152,176 @@ def cmd_scripted_run(args: argparse.Namespace) -> int:
     return 0 if all(o.status == "fixed" for o in rows) else 1
 
 
+PAID_HELP = ("Real model runs cost money. Nothing runs until you pass --approve-budget with an amount in "
+             "dollars (at least the largest cost shown above), after you have agreed to that budget.")
+
+
+def _llm_setup(need_cost_cap: float | None = None):
+    """Read the LLM settings and limits from the environment. Never prints the API key."""
+    from fixpilot.agent.state import Limits
+    from fixpilot.llm import LLMConfig
+
+    cfg = LLMConfig.from_env()
+    limits = Limits.from_env()
+    return cfg, limits
+
+
+def _require_approval(cfg, args, needed_usd: float | None, what: str) -> None:
+    """Paid providers need an explicit, sufficient --approve-budget. The fake provider is free."""
+    if cfg.provider == "fake":
+        return
+    approved = getattr(args, "approve_budget", None)
+    if needed_usd is None:
+        raise SystemExit(f"Cannot compute the worst-case cost of {what} (no cost cap or unknown price). "
+                         "Set the prices and a cost cap first.\n" + PAID_HELP)
+    if approved is None or approved + 1e-9 < needed_usd:
+        raise SystemExit(f"{what} can cost up to ${needed_usd:.2f}. " + PAID_HELP)
+
+
+def cmd_llm_check(args: argparse.Namespace) -> int:
+    from fixpilot.llm import check_tool_support, create_llm
+    from fixpilot.llm.base import Usage
+    from fixpilot.llm.support import PROBE_ESTIMATED_TOKENS
+
+    cfg, limits = _llm_setup()
+    print(f"provider: {cfg.provider}\nmodel: {cfg.model or '(not set)'}\nbase URL host: {cfg.base_url_host or '(default)'}")
+    print(f"API key: {'set' if cfg.api_key else 'not set'} (the value is never shown or stored)")
+    print(f"prices per million tokens: {cfg.prices.public()}")
+    print(f"prompt cache: {cfg.prompt_cache}   effort: {cfg.effort or '(provider default)'}")
+    print(f"limits: tool calls {limits.max_tool_calls}, attempts {limits.max_attempts}, "
+          f"seconds {limits.timeout_s}, tokens {limits.max_tokens}, cost per run ${limits.max_cost_usd}")
+    cfg.validate_for_run(needs_cost=limits.max_cost_usd is not None)
+    print("\nsettings: OK")
+    if not args.probe:
+        print("tool calling: not checked. A real run checks it first (free provider metadata, then one "
+              f"tiny test request of about {PROBE_ESTIMATED_TOKENS} tokens if the metadata does not say).")
+        return 0
+    probe_cost = cfg.prices.cost(Usage(PROBE_ESTIMATED_TOKENS, 100)) if cfg.prices.known else None
+    _require_approval(cfg, args, max(probe_cost or 0.0, 0.01) if probe_cost is not None else None, "the tool-call probe")
+    support = check_tool_support(create_llm(cfg), probe=True)
+    print(f"tool calling: {support.status} ({support.detail})")
+    return 0
+
+
+def _make_embedder(cfg, variant: str):
+    if variant == "no_search":
+        return None
+    from fixpilot.retrieval.embeddings import FastEmbedder
+
+    return FastEmbedder()
+
+
+def cmd_agent_run(args: argparse.Namespace) -> int:
+    from fixpilot.agent.runner import RunSpec, run_one
+    from fixpilot.agent.scripted import new_run_dir
+    from fixpilot.benchmark import load_bugs, load_dev_bugs
+    from fixpilot.llm import check_tool_support, create_llm
+
+    cfg, limits = _llm_setup()
+    limits = limits.model_copy(update={"max_attempts": args.max_attempts})
+    cfg.validate_for_run(needs_cost=limits.max_cost_usd is not None)
+    bugs = load_dev_bugs() if args.split == "dev" else load_bugs("approved")
+    bug = next((b for b in bugs if b.id == args.bug_id), None)
+    if bug is None:
+        raise SystemExit(f"No bug {args.bug_id!r} in the {args.split} split.")
+    worst = limits.max_cost_usd
+    print(f"{cfg.provider}/{cfg.model}: this run can cost up to "
+          f"{f'${worst:.2f}' if worst is not None else 'an unknown amount'} (per-run cap).")
+    _require_approval(cfg, args, worst, "this run")
+    support = check_tool_support(create_llm(cfg), probe=cfg.provider != "fake")
+    print(f"tool calling: {support.status}")
+    embedder = _make_embedder(cfg, args.variant)
+    spec = RunSpec(bug, args.split, args.style, args.variant, args.condition, 0)
+    run_dir = new_run_dir(f"{bug.id}-{args.variant}")
+    rec = run_one(spec, cfg, limits, embedder, run_dir, "single")
+    if embedder is not None:
+        embedder.save()
+    print(f"\nstatus: {rec.status} ({rec.stop_reason})   fixed (whole suite): {rec.verified_fixed}")
+    print(f"tool calls {rec.tool_calls}, model calls {rec.llm_calls}, tokens {rec.tokens_in}/{rec.tokens_out}, "
+          f"cost ${rec.cost_usd:.4f}, seconds {rec.seconds}")
+    print(f"patched right function: {rec.localized_function}   first evidence: {rec.first_evidence}")
+    if args.split == "dev" or cfg.provider == "fake":
+        print("NOT REPORTABLE: dev bug or fake model.")
+    print(f"logs: {run_dir}")
+    return 0
+
+
+def _experiment_config(args: argparse.Namespace, limits):
+    import time as _time
+
+    from fixpilot.agent.experiment import ExperimentConfig
+
+    eid = args.id or _time.strftime("%Y%m%d-%H%M%S", _time.gmtime())
+    out = Path(args.dir) if args.dir else PROJECT_ROOT / "runs" / f"experiment-{eid}"
+    split_csv = lambda v, default: tuple(x for x in v.split(",") if x) if v else default
+    from fixpilot.agent.runner import CONDITIONS, STYLES, VARIANTS
+
+    cap_raw = args.cost_cap if args.cost_cap is not None else os.environ.get("FIXPILOT_EXPERIMENT_COST_CAP_USD")
+    return ExperimentConfig(
+        experiment_id=eid, out_dir=out, split=args.split, repeats=args.repeats,
+        variants=split_csv(args.variants, VARIANTS), styles=split_csv(args.styles, STYLES),
+        conditions=split_csv(args.conditions, tuple(CONDITIONS)),
+        limits=limits.model_copy(update={"max_attempts": 1}),  # single pass; retries are Stage 5
+        total_cost_cap_usd=float(cap_raw) if cap_raw not in (None, "") else None,
+        bug_ids=[b for b in args.bugs.split(",") if b] if args.bugs else None)
+
+
+def _print_plan(plan: dict) -> None:
+    print(f"split: {plan['split']}   bugs: {plan['bugs']}   runs: {plan['runs']}   model: {plan['provider']}/{plan['model']}")
+    print(f"per-run cost cap: {plan['per_run_cap_usd']}   total cost cap: {plan['total_cap_usd']}")
+    if plan["prices_known"]:
+        print(f"typical run (my size assumption, not measured): ${plan['typical_run_usd']}   "
+              f"typical total: ${plan['typical_total_usd']}   worst case: ${plan['worst_case_usd']}")
+    else:
+        print("prices unknown: no estimate possible. Set FIXPILOT_PRICE_INPUT_PER_MTOK and "
+              "FIXPILOT_PRICE_OUTPUT_PER_MTOK.")
+
+
+def cmd_experiment_plan(args: argparse.Namespace) -> int:
+    from fixpilot.agent.experiment import plan_experiment
+
+    cfg, limits = _llm_setup()
+    _print_plan(plan_experiment(_experiment_config(args, limits), cfg))
+    print("\nNothing was run and nothing was spent.")
+    return 0
+
+
+def cmd_experiment_run(args: argparse.Namespace) -> int:
+    from fixpilot.agent.experiment import plan_experiment, run_experiment
+
+    cfg, limits = _llm_setup()
+    exp = _experiment_config(args, limits)
+    plan = plan_experiment(exp, cfg)
+    _print_plan(plan)
+    if cfg.provider != "fake" and exp.total_cost_cap_usd is None:
+        raise SystemExit("A paid experiment needs a total cost cap: pass --cost-cap USD "
+                         "(or set FIXPILOT_EXPERIMENT_COST_CAP_USD).")
+    _require_approval(cfg, args, exp.total_cost_cap_usd, "this experiment")
+    embedder = None if exp.variants == ("no_search",) else _make_embedder(cfg, "agent_search")
+    summary = run_experiment(exp, cfg, embedder)
+    if embedder is not None:
+        embedder.save()
+    print(f"\ncompleted {summary.completed} runs, spent ${summary.spent_usd:.4f}. Results: {exp.out_dir}")
+    print(f"Show the tables with: fixpilot experiment report {exp.out_dir}")
+    return 0
+
+
+def cmd_experiment_report(args: argparse.Namespace) -> int:
+    from fixpilot.agent.experiment import load_records
+    from fixpilot.agent.experiment_report import assert_reportable, format_report
+
+    records = load_records(Path(args.dir))
+    text = format_report(records, Path(args.dir))
+    print(text)
+    if args.save:
+        assert_reportable(records)
+        out = PROJECT_ROOT / "benchmark" / "results" / f"experiment-{records[0].experiment_id}.txt"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text + "\n")
+        print(f"\nSaved {out.relative_to(PROJECT_ROOT)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="fixpilot")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -167,10 +338,12 @@ def main(argv: list[str] | None = None) -> int:
     bsub = bench.add_subparsers(dest="bench_command", required=True)
     bl = bsub.add_parser("list", help="List the planted bugs")
     bl.add_argument("--status", default="all", choices=["all", "proposed", "approved"])
+    bl.add_argument("--dev", action="store_true", help="List the throwaway dev bugs instead")
     bl.set_defaults(func=cmd_bench_list)
     bv = bsub.add_parser("validate", help="Check every bug fails its tests in the sandbox")
     bv.add_argument("--status", default="all", choices=["all", "proposed", "approved"])
     bv.add_argument("--id", action="append", help="Only this bug (can repeat)")
+    bv.add_argument("--dev", action="store_true", help="Validate the throwaway dev bugs instead")
     bv.set_defaults(func=cmd_bench_validate)
 
     br = bsub.add_parser("retrieval", help="Measure code search recall on the bug reports")
@@ -193,10 +366,48 @@ def main(argv: list[str] | None = None) -> int:
     sr.add_argument("--wrong-first", action="store_true", help="Try a useless patch first")
     sr.set_defaults(func=cmd_scripted_run)
 
+    lc = sub.add_parser("llm", help="Check the LLM settings").add_subparsers(dest="llm_command", required=True)
+    chk = lc.add_parser("check", help="Show the LLM settings and check them (no network without --probe)")
+    chk.add_argument("--probe", action="store_true", help="Send one tiny test request (costs a little)")
+    chk.add_argument("--approve-budget", type=float, help="Dollars you approved (paid providers only)")
+    chk.set_defaults(func=cmd_llm_check)
+
+    ag = sub.add_parser("agent", help="Run the LLM agent").add_subparsers(dest="agent_command", required=True)
+    ar = ag.add_parser("run", help="One agent run on one bug")
+    ar.add_argument("bug_id")
+    ar.add_argument("--split", default="benchmark", choices=["benchmark", "dev"])
+    ar.add_argument("--variant", default="agent_search", choices=["no_search", "one_shot", "agent_search"])
+    ar.add_argument("--style", default="vague", choices=["specific", "vague"])
+    ar.add_argument("--condition", default="A", choices=["A", "B"], help="A realistic, B blind tests")
+    ar.add_argument("--max-attempts", type=int, default=1)
+    ar.add_argument("--approve-budget", type=float, help="Dollars you approved (paid providers only)")
+    ar.set_defaults(func=cmd_agent_run)
+
+    ex = sub.add_parser("experiment", help="Run many agent runs under a total cost cap")
+    exs = ex.add_subparsers(dest="exp_command", required=True)
+    for name, fn, helptext in (("plan", cmd_experiment_plan, "Show size and cost estimate. Runs nothing."),
+                               ("run", cmd_experiment_run, "Run the experiment")):
+        e = exs.add_parser(name, help=helptext)
+        e.add_argument("--split", default="benchmark", choices=["benchmark", "dev"])
+        e.add_argument("--repeats", type=int, default=3)
+        e.add_argument("--variants", help="comma list of no_search,one_shot,agent_search")
+        e.add_argument("--styles", help="comma list of specific,vague")
+        e.add_argument("--conditions", help="comma list of A,B")
+        e.add_argument("--bugs", help="comma list of bug ids")
+        e.add_argument("--cost-cap", type=float, help="TOTAL dollars for the experiment")
+        e.add_argument("--id")
+        e.add_argument("--dir")
+        e.add_argument("--approve-budget", type=float, help="Dollars you approved (paid providers only)")
+        e.set_defaults(func=fn)
+    er = exs.add_parser("report", help="Show tables from a finished or stopped experiment")
+    er.add_argument("dir")
+    er.add_argument("--save", action="store_true", help="Save to benchmark/results (refused if not reportable)")
+    er.set_defaults(func=cmd_experiment_report)
+
     args = parser.parse_args(argv)
     try:
         return args.func(args)
-    except (SandboxError, ValueError) as e:  # BugError is a ValueError
+    except (SandboxError, ValueError, RuntimeError) as e:  # ConfigError, BugError: ValueError
         print(f"Error: {e}", file=sys.stderr)
         return 2
 

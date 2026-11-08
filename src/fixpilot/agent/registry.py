@@ -84,10 +84,11 @@ class ToolRegistry:
         return [{"name": n, "description": DESCRIPTIONS[n],
                  "input_schema": _TOOLS[n][0].model_json_schema()} for n in self.available()]
 
-    def call(self, name: str, args: Any) -> ToolResult:
+    def call(self, name: str, args: Any, invalid: str | None = None) -> ToolResult:
+        """Run a tool. `invalid` is set by the loop when the model's arguments could not be parsed."""
         ctx, st = self.ctx, self.ctx.state
         start = time.monotonic()
-        result = self._run(name, args)
+        result = self._run(name, args, invalid)
         st.tool_history.append(ToolRecord(
             seq=len(st.tool_history) + 1, tool=name, ok=result.ok, summary=_summary(name, result),
             duration_ms=int((time.monotonic() - start) * 1000)))
@@ -99,7 +100,7 @@ class ToolRegistry:
         )
         return result
 
-    def _run(self, name: str, args: Any) -> ToolResult:
+    def _run(self, name: str, args: Any, invalid: str | None = None) -> ToolResult:
         st = self.ctx.state
         # Limits are checked BEFORE counting this call, so exactly max_tool_calls calls run.
         limit = st.check_limits() if name != "write_report" and st.status == Status.RUNNING else None
@@ -115,6 +116,8 @@ class ToolRegistry:
                 st.stop(Status.FAILED, f"limit:{limit}")
                 return ToolResult(ok=False, error=f"limit reached ({limit}). "
                                   "Call write_report to finish.")
+        if invalid:
+            return ToolResult(ok=False, error=invalid)
         if not isinstance(args, dict):
             return ToolResult(ok=False, error="tool arguments must be a JSON object")
         model, func = _TOOLS[name]

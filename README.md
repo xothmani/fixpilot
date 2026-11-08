@@ -6,9 +6,11 @@ Given a bug report and a small Python repo, FixPilot will find the likely buggy 
 run the tests in a locked sandbox, retry if needed, and write a report. A human approves or
 rejects the change. The agent never pushes code by itself.
 
-**Status: Stage 4a of 9 (agent tools and state).** There is no LLM yet. So far there is a safe
-test runner, three sample repos, 15 planted bugs (all approved), a code search with measured
-recall, and the five agent tools with state, limits and logs, driven by a script.
+**Status: Stage 4b-1 of 9 (LLM layer and experiment runner, tested with a fake model only).**
+No real model has been called yet and nothing has been spent. So far there is a safe test runner,
+three sample repos, 15 planted bugs (all approved), a code search with measured recall, the five
+agent tools, a provider-independent LLM layer, a LangGraph agent loop, and an experiment runner
+with a total cost cap.
 
 ## Quick start
 
@@ -82,6 +84,7 @@ src/fixpilot/
   config.py            settings from environment variables
   cli.py               the `fixpilot` command
   benchmark.py         loads bugs, plants them in a copy, validates them
+  llm/                 provider-independent model clients (anthropic, openai_compat, fake)
   retrieval/           chunker, BM25, embeddings, hybrid index, recall evaluation
   sandbox/
     workspace.py       makes a temporary copy of a repo
@@ -89,6 +92,7 @@ src/fixpilot/
 docker/Dockerfile.sandbox   the sandbox image (Python 3.12 and pytest only)
 benchmark/repos/            the sample repos
 benchmark/bugs/             one JSON file per planted bug
+benchmark/dev_bugs/         throwaway bugs for prompt writing, never reported
 benchmark/results/          saved measurements
 tests/                      tests for FixPilot itself
 ```
@@ -188,12 +192,67 @@ fixpilot scripted-run --all --blind         # hide test tracebacks
 It proves the tools, limits, sandbox and logs work end to end. A result of 15/15 here says nothing
 about how good an LLM will be.
 
+## The LLM layer and the experiment runner (Stage 4b-1)
+
+The model is chosen only with environment variables, so the code does not care who provides it.
+
+| Provider | Use it for | Notes |
+|---|---|---|
+| `anthropic` | Claude models | optional prompt caching and effort |
+| `openai_compat` | any OpenAI-compatible server: OpenRouter, Groq, DeepSeek, OpenAI, Ollama, vLLM | needs `FIXPILOT_LLM_BASE_URL` |
+| `fake` | free rehearsals and tests | follows a script, invents its answers, never reportable |
+
+Settings are listed in `.env.example`. Rules the code enforces:
+
+- **The API key lives only in your shell.** It is never written to a file, a log, a prompt, the
+  screen, or the saved settings. A test scans every output file for it.
+- **Prices come from you, never from a built-in list.** If the price is unknown the run refuses to
+  start whenever a cost cap exists. A local model can use `0`. Sources and what was verified:
+  `docs/pricing-sources.md`.
+- **Same limits for every provider**: tool calls, patch attempts, time, tokens and cost. The cost and
+  token limits are checked before each model call using a pessimistic size estimate, so a run does
+  not pass its cap.
+- **Total experiment cap, checked before every run.** A run starts only if the cap would still hold
+  even if that run spent its whole per-run cap. When the cap is reached the experiment stops by
+  itself and lists the runs it did not do. A run cut off by a limit counts as a failure and is
+  reported as one.
+- **Paid runs need your approval.** For any real provider the commands refuse to run unless you pass
+  `--approve-budget` with an amount at least as large as the worst-case cost they print.
+- **Tool-calling check at startup.** Free provider metadata first (OpenRouter lists supported
+  parameters). If that does not say, one tiny test request of about 400 tokens. A model that cannot
+  call tools stops the run with a clear message.
+- **Provider and model are stamped on every log line and every result row**, and a results folder
+  refuses to mix two models.
+- **Prompt caching** is optional and only for `anthropic`. Cache prices differ by model, so you must
+  set them yourself when caching is on.
+
+The agent loop is a LangGraph graph with three nodes: `think` (one model call), `act` (run the
+requested tools) and `finish` (make sure a report exists, written by the model if possible, by the
+application otherwise).
+
+### Try it for free with the fake model
+
+```bash
+export FIXPILOT_LLM_PROVIDER=fake FIXPILOT_FAKE_PROFILE=mixed
+fixpilot llm check                                    # shows the settings, never the key
+fixpilot experiment plan                              # size and cost estimate, runs nothing
+fixpilot experiment run --bugs shop-03,task-02,tiny-01 --repeats 1 --id rehearsal
+fixpilot experiment report runs/experiment-rehearsal  # tables, marked NOT REPORTABLE
+fixpilot agent run dev-01 --split dev                 # one run on a throwaway dev bug
+```
+
+### Dev bugs
+
+`benchmark/dev_bugs` holds three throwaway bugs (`dev-01` to `dev-03`) for writing prompts. They live
+in their own folder, have status `dev`, never appear in `fixpilot bench list`, use functions that no
+benchmark bug uses, and any run on them is marked `split: dev` and refused as a result.
+
 ## Roadmap
 
 1. Project setup and sandbox (done)
 2. Bug benchmark v1, 15 planted bugs with ground truth (3 still waiting for review)
 3. Code search (RAG) and retrieval recall (done)
-4. Agent v1 (LangGraph). 4a tools and state (done), 4b LLM loop and search experiment (see docs/stage-4b-plan.md)
+4. Agent v1 (LangGraph). 4a tools and state (done), 4b-1 LLM layer, loop and experiment runner with a fake model (done), 4b-2 real model pilots and the search experiment (see docs/stage-4b-plan.md)
 5. Retry loop, report, human approval
 6. Full benchmark and improvements
 7. Safety tests

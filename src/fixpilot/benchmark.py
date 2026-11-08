@@ -18,6 +18,8 @@ from fixpilot.sandbox import TestResult, Workspace, run_pytest
 from fixpilot.sandbox import failed_test_ids as _failed_ids
 
 BUGS_DIR = PROJECT_ROOT / "benchmark" / "bugs"
+# Throwaway bugs for writing prompts. Never part of the benchmark and never in a reported number.
+DEV_BUGS_DIR = PROJECT_ROOT / "benchmark" / "dev_bugs"
 BUG_TYPES = {
     "wrong_operator",
     "off_by_one",
@@ -28,7 +30,7 @@ BUG_TYPES = {
     "sort_tie_break",
     "case_sensitivity",
 }
-STATUSES = {"proposed", "approved"}  # only "approved" bugs count in benchmark runs
+STATUSES = {"proposed", "approved", "dev"}  # only "approved" bugs count in benchmark runs
 
 
 class BugError(ValueError):
@@ -89,12 +91,23 @@ def _load_one(path: Path) -> Bug:
 
 def load_bugs(status: str = "all", bugs_dir: Path = BUGS_DIR) -> list[Bug]:
     bugs = [_load_one(p) for p in sorted(bugs_dir.glob("*.json"))]
+    is_dev_dir = Path(bugs_dir).resolve() == DEV_BUGS_DIR.resolve()
+    for b in bugs:  # dev bugs and benchmark bugs must never be mixed
+        if is_dev_dir and b.status != "dev":
+            raise BugError(f"{b.id}: files in dev_bugs must have status 'dev'")
+        if not is_dev_dir and b.status == "dev":
+            raise BugError(f"{b.id}: status 'dev' is only allowed in benchmark/dev_bugs")
     if status != "all":
         bugs = [b for b in bugs if b.status == status]
     ids = [b.id for b in bugs]
     if len(ids) != len(set(ids)):
         raise BugError("Duplicate bug ids")
     return bugs
+
+
+def load_dev_bugs() -> list[Bug]:
+    """The throwaway prompt-development bugs. Results from them are never reported."""
+    return load_bugs("all", DEV_BUGS_DIR)
 
 
 def apply_bug(repo_dir: Path, bug: Bug) -> None:

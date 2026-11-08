@@ -1,0 +1,19 @@
+{
+  "id": "dev-01",
+  "repo": "shopkit",
+  "status": "dev",
+  "bug_type": "missing_check",
+  "difficulty": "easy",
+  "file": "shopkit/pagination.py",
+  "function": "total_pages",
+  "description": "Removes the minimum of one page, so an empty list has zero pages.",
+  "mutation": {
+    "old": "    return max(1, math.ceil(total_items / per_page))",
+    "new": "    return math.ceil(total_items / per_page)"
+  },
+  "failing_tests": [
+    "tests/test_listing.py::test_total_pages"
+  ],
+  "report_specific": "total_pages(0, 5) returns 0. A list with no items should still have 1 page.",
+  "report_vague": "The product list says there are zero pages when a category is empty, and the pager looks broken."
+}

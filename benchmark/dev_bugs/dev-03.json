@@ -1,0 +1,19 @@
+{
+  "id": "dev-03",
+  "repo": "taskboard",
+  "status": "dev",
+  "bug_type": "wrong_operator",
+  "difficulty": "medium",
+  "file": "taskboard/permissions.py",
+  "function": "can",
+  "description": ">= became >, so a role whose rank equals the minimum rank is denied.",
+  "mutation": {
+    "old": "    return ROLE_RANK[role] >= ROLE_RANK[ACTION_MIN_ROLE[action]]",
+    "new": "    return ROLE_RANK[role] > ROLE_RANK[ACTION_MIN_ROLE[action]]"
+  },
+  "failing_tests": [
+    "tests/test_projects_tags_users.py::test_permissions"
+  ],
+  "report_specific": "can('member', 'edit') returns False. A role should be allowed to do an action when its rank is at least the minimum role for that action.",
+  "report_vague": "Regular team members are told they are not allowed to edit tasks that they should be able to edit."
+}

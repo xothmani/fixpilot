@@ -9,7 +9,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-_SECRET_ENV_NAMES = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "HF_TOKEN", "LANGFUSE_SECRET_KEY")
+_SECRET_ENV_NAMES = ("FIXPILOT_LLM_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "HF_TOKEN",
+                     "LANGFUSE_SECRET_KEY")
 _PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_\-]{16,}"),
     re.compile(r"(?i)\b(api[_-]?key|secret|token|password)\b(\s*[:=]\s*)\S+"),
@@ -42,14 +43,15 @@ def clean(value: Any, limit: int = MAX_FIELD_CHARS) -> Any:
 class Tracer:
     """Keeps records in memory and, if `run_dir` is given, also appends them to trace.jsonl."""
 
-    def __init__(self, run_dir: Path | None = None):
+    def __init__(self, run_dir: Path | None = None, static: dict | None = None):
         self.run_dir = Path(run_dir) if run_dir else None
+        self.static = clean(static or {})  # e.g. provider and model, added to every record
         self.records: list[dict] = []
         if self.run_dir:
             self.run_dir.mkdir(parents=True, exist_ok=True)
 
     def log(self, **fields: Any) -> dict:
-        record = {"ts": round(time.time(), 3), **clean(fields)}
+        record = {"ts": round(time.time(), 3), **self.static, **clean(fields)}
         self.records.append(record)
         if self.run_dir:
             with (self.run_dir / "trace.jsonl").open("a") as f:
