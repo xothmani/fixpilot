@@ -17,5 +17,17 @@
     "tests/test_checkout.py::test_quote_with_coupon"
   ],
   "report_specific": "Cart.total_weight_g() returns 420 for a cart with 2 x PEN-001 (20 g each) and 1 x MUG-003 (400 g). It should be 440. Orders with several units of the same item are charged shipping for too little weight.",
-  "report_vague": "Customers who order many copies of the same heavy item pay the same shipping as if they had ordered just one."
+  "report_vague": "Customers who order many copies of the same heavy item pay the same shipping as if they had ordered just one.",
+  "decoys": [
+    {
+      "file": "shopkit/shipping.py",
+      "function": "shipping_cents",
+      "why": "computes shipping from the weight, but is correct"
+    },
+    {
+      "file": "shopkit/cart.py",
+      "function": "total_weight_g",
+      "why": "sums the line weights, but is correct"
+    }
+  ]
 }

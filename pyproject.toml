@@ -7,7 +7,7 @@ name = "fixpilot"
 version = "0.1.0"
 description = "Bug fixer agent with RAG, measured on a planted-bug benchmark"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["numpy>=1.26", "fastembed>=0.5"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]

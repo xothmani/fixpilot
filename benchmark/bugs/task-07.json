@@ -15,5 +15,17 @@
     "tests/test_text.py::test_parse_quick_add_full"
   ],
   "report_specific": "parse_quick_add('Fix login #Bug #bug') returns the tags ['Bug', 'bug']. Tags should be lowercase with duplicates removed, so the expected result is ['bug'].",
-  "report_vague": "When people type a tag with a capital letter in the quick add box we get two copies of the same tag, and filtering by tag misses some tasks."
+  "report_vague": "When people type a tag with a capital letter in the quick add box we get two copies of the same tag, and filtering by tag misses some tasks.",
+  "decoys": [
+    {
+      "file": "taskboard/tags.py",
+      "function": "normalize_tag",
+      "why": "the real lowercasing helper, correct and unused here"
+    },
+    {
+      "file": "taskboard/tags.py",
+      "function": "parse_tags",
+      "why": "parses tags from text, correct"
+    }
+  ]
 }

@@ -49,6 +49,7 @@ class Bug:
     report_specific: str
     report_vague: str
     description: str = ""
+    decoys: list[dict] = field(default_factory=list)  # correct code that looks guilty
     path: Path | None = field(default=None, repr=False)
 
 
@@ -69,6 +70,7 @@ def _load_one(path: Path) -> Bug:
             report_specific=data["report_specific"],
             report_vague=data["report_vague"],
             description=data.get("description", ""),
+            decoys=list(data.get("decoys", [])),
             path=path,
         )
     except KeyError as e:

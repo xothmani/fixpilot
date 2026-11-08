@@ -1,0 +1,2032 @@
+{
+  "model": "BAAI/bge-small-en-v1.5",
+  "bugs": [
+    {
+      "id": "shop-01",
+      "status": "approved",
+      "difficulty": "medium"
+    },
+    {
+      "id": "shop-02",
+      "status": "approved",
+      "difficulty": "hard"
+    },
+    {
+      "id": "shop-03",
+      "status": "approved",
+      "difficulty": "easy"
+    },
+    {
+      "id": "shop-04",
+      "status": "approved",
+      "difficulty": "easy"
+    },
+    {
+      "id": "shop-06",
+      "status": "approved",
+      "difficulty": "hard"
+    },
+    {
+      "id": "shop-08",
+      "status": "proposed",
+      "difficulty": "hard"
+    },
+    {
+      "id": "task-01",
+      "status": "approved",
+      "difficulty": "medium"
+    },
+    {
+      "id": "task-02",
+      "status": "approved",
+      "difficulty": "medium"
+    },
+    {
+      "id": "task-03",
+      "status": "approved",
+      "difficulty": "hard"
+    },
+    {
+      "id": "task-04",
+      "status": "approved",
+      "difficulty": "easy"
+    },
+    {
+      "id": "task-06",
+      "status": "approved",
+      "difficulty": "medium"
+    },
+    {
+      "id": "task-07",
+      "status": "proposed",
+      "difficulty": "hard"
+    },
+    {
+      "id": "task-08",
+      "status": "proposed",
+      "difficulty": "medium"
+    },
+    {
+      "id": "tiny-01",
+      "status": "approved",
+      "difficulty": "easy"
+    },
+    {
+      "id": "tiny-02",
+      "status": "approved",
+      "difficulty": "easy"
+    }
+  ],
+  "summary": {
+    "specific": {
+      "bm25": {
+        "file": {
+          "recall@1": 14,
+          "recall@3": 15,
+          "recall@5": 15
+        },
+        "function": {
+          "recall@1": 14,
+          "recall@3": 15,
+          "recall@5": 15
+        }
+      },
+      "embedding": {
+        "file": {
+          "recall@1": 14,
+          "recall@3": 15,
+          "recall@5": 15
+        },
+        "function": {
+          "recall@1": 14,
+          "recall@3": 15,
+          "recall@5": 15
+        }
+      },
+      "hybrid": {
+        "file": {
+          "recall@1": 14,
+          "recall@3": 15,
+          "recall@5": 15
+        },
+        "function": {
+          "recall@1": 14,
+          "recall@3": 15,
+          "recall@5": 15
+        }
+      },
+      "bm25_nostem": {
+        "file": {
+          "recall@1": 14,
+          "recall@3": 14,
+          "recall@5": 15
+        },
+        "function": {
+          "recall@1": 14,
+          "recall@3": 14,
+          "recall@5": 15
+        }
+      }
+    },
+    "vague": {
+      "bm25": {
+        "file": {
+          "recall@1": 7,
+          "recall@3": 10,
+          "recall@5": 10
+        },
+        "function": {
+          "recall@1": 5,
+          "recall@3": 8,
+          "recall@5": 9
+        }
+      },
+      "embedding": {
+        "file": {
+          "recall@1": 7,
+          "recall@3": 10,
+          "recall@5": 10
+        },
+        "function": {
+          "recall@1": 5,
+          "recall@3": 7,
+          "recall@5": 7
+        }
+      },
+      "hybrid": {
+        "file": {
+          "recall@1": 8,
+          "recall@3": 11,
+          "recall@5": 12
+        },
+        "function": {
+          "recall@1": 6,
+          "recall@3": 9,
+          "recall@5": 10
+        }
+      },
+      "bm25_nostem": {
+        "file": {
+          "recall@1": 7,
+          "recall@3": 10,
+          "recall@5": 12
+        },
+        "function": {
+          "recall@1": 6,
+          "recall@3": 9,
+          "recall@5": 10
+        }
+      }
+    }
+  },
+  "results": [
+    {
+      "bug_id": "shop-01",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/coupons.py::Coupon.is_expired",
+        "shopkit/coupons.py::Coupon",
+        "shopkit/errors.py::InvalidCoupon",
+        "shopkit/dates.py::end_of_month",
+        "shopkit/coupons.py::CouponBook.validate"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/coupons.py::Coupon.is_expired",
+        "shopkit/coupons.py::CouponBook.validate",
+        "shopkit/coupons.py::Coupon",
+        "shopkit/errors.py::InvalidCoupon",
+        "shopkit/payments.py::charge"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/coupons.py::Coupon.is_expired",
+        "shopkit/coupons.py::Coupon",
+        "shopkit/coupons.py::CouponBook.validate",
+        "shopkit/errors.py::InvalidCoupon",
+        "shopkit/coupons.py::CouponBook.redeem"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/coupons.py::Coupon.is_expired",
+        "shopkit/coupons.py::Coupon",
+        "shopkit/dates.py::end_of_month",
+        "shopkit/errors.py::InvalidCoupon",
+        "shopkit/coupons.py::CouponBook.validate"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 6,
+      "function_rank": 6,
+      "top5": [
+        "shopkit/dates.py::days_between",
+        "shopkit/dates.py::end_of_month",
+        "shopkit/dates.py::add_business_days",
+        "shopkit/checkout.py::build_quote",
+        "shopkit/history.py::orders_for_customer"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 3,
+      "function_rank": 6,
+      "top5": [
+        "shopkit/discounts.py::fixed_off",
+        "shopkit/errors.py::InvalidCoupon",
+        "shopkit/coupons.py::CouponBook.validate",
+        "shopkit/notifications.py::<module>",
+        "shopkit/coupons.py::Coupon"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/coupons.py::Coupon.is_expired",
+        "shopkit/checkout.py::build_quote",
+        "shopkit/coupons.py::CouponBook.validate",
+        "shopkit/refunds.py::<module>",
+        "shopkit/discounts.py::fixed_off"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-01",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 9,
+      "function_rank": 22,
+      "top5": [
+        "shopkit/dates.py::end_of_month",
+        "shopkit/reports.py::best_day",
+        "shopkit/dates.py::days_between",
+        "shopkit/checkout.py::build_quote",
+        "shopkit/history.py::orders_for_customer"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/checkout.py::build_quote",
+        "shopkit/tax.py::<module>",
+        "shopkit/checkout.py::Quote",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/discounts.py::percent_off"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/checkout.py::build_quote",
+        "shopkit/tax.py::<module>",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/discounts.py::cart_bulk_discount",
+        "shopkit/checkout.py::Quote"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/checkout.py::build_quote",
+        "shopkit/tax.py::<module>",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/checkout.py::Quote",
+        "shopkit/discounts.py::cart_bulk_discount"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/checkout.py::build_quote",
+        "shopkit/tax.py::<module>",
+        "shopkit/checkout.py::Quote",
+        "shopkit/discounts.py::percent_off",
+        "shopkit/receipts.py::render_receipt"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 3,
+      "function_rank": 3,
+      "top5": [
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/reports.py::sales_summary",
+        "shopkit/checkout.py::build_quote",
+        "shopkit/notifications.py::<module>",
+        "shopkit/history.py::orders_for_customer"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 9,
+      "function_rank": 13,
+      "top5": [
+        "shopkit/discounts.py::<module>",
+        "shopkit/tax.py::<module>",
+        "shopkit/discounts.py::bulk_discount_percent",
+        "shopkit/refunds.py::<module>",
+        "shopkit/discounts.py::cart_bulk_discount"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 5,
+      "function_rank": 5,
+      "top5": [
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/reports.py::sales_summary",
+        "shopkit/notifications.py::<module>",
+        "shopkit/discounts.py::cart_bulk_discount",
+        "shopkit/checkout.py::build_quote"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-02",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/checkout.py::build_quote",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/loyalty.py::redeem",
+        "shopkit/money.py::clamp_cents",
+        "shopkit/reports.py::sales_summary"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/reports.py::best_day",
+        "shopkit/errors.py::NotFound"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/discounts.py::<module>",
+        "shopkit/history.py::filter_orders",
+        "shopkit/history.py::lifetime_spend_cents"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/history.py::lifetime_spend_cents",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/history.py::filter_orders"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/reports.py::best_day",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/history.py::filter_orders"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::best_day",
+        "shopkit/dates.py::add_business_days",
+        "shopkit/dates.py::days_between",
+        "shopkit/refunds.py::refund_percent"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 3,
+      "function_rank": 3,
+      "top5": [
+        "shopkit/errors.py::OutOfStock",
+        "shopkit/refunds.py::<module>",
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/reports.py::<module>"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/reports.py::sales_summary",
+        "shopkit/refunds.py::<module>",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/reports.py::best_day",
+        "shopkit/refunds.py::refund_percent"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-03",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 3,
+      "top5": [
+        "shopkit/reports.py::best_day",
+        "shopkit/dates.py::end_of_month",
+        "shopkit/reports.py::sales_summary",
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/reports.py::top_products"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/pagination.py::paginate",
+        "shopkit/pagination.py::page_info",
+        "shopkit/catalog.py::Catalog.price_range",
+        "shopkit/pagination.py::total_pages",
+        "shopkit/money.py::split_evenly"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/pagination.py::paginate",
+        "shopkit/pagination.py::page_info",
+        "shopkit/pagination.py::total_pages",
+        "shopkit/pagination.py::<module>",
+        "shopkit/search.py::search"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/pagination.py::paginate",
+        "shopkit/pagination.py::page_info",
+        "shopkit/pagination.py::total_pages",
+        "shopkit/catalog.py::Catalog.price_range",
+        "shopkit/reports.py::counted_orders"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/pagination.py::paginate",
+        "shopkit/pagination.py::page_info",
+        "shopkit/catalog.py::Catalog.price_range",
+        "shopkit/pagination.py::total_pages",
+        "shopkit/money.py::split_evenly"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/pagination.py::paginate",
+        "shopkit/pagination.py::page_info",
+        "shopkit/cart.py::Cart.is_empty",
+        "shopkit/pagination.py::total_pages",
+        "shopkit/reports.py::top_products"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 10,
+      "function_rank": 10,
+      "top5": [
+        "shopkit/catalog.py::Catalog.all",
+        "shopkit/search.py::search",
+        "shopkit/reports.py::<module>",
+        "shopkit/errors.py::NotFound",
+        "shopkit/cart.py::Cart.is_empty"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 3,
+      "function_rank": 3,
+      "top5": [
+        "shopkit/cart.py::Cart.is_empty",
+        "shopkit/catalog.py::Catalog.all",
+        "shopkit/pagination.py::paginate",
+        "shopkit/reports.py::top_products",
+        "shopkit/pagination.py::page_info"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-04",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/pagination.py::paginate",
+        "shopkit/pagination.py::page_info",
+        "shopkit/cart.py::Cart.is_empty",
+        "shopkit/pagination.py::total_pages",
+        "shopkit/cart.py::Cart.add"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/money.py::apply_percent",
+        "shopkit/discounts.py::percent_off",
+        "shopkit/discounts.py::fixed_off",
+        "shopkit/tax.py::tax_cents",
+        "shopkit/coupons.py::CouponBook.discount_for"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/money.py::apply_percent",
+        "shopkit/tax.py::tax_cents",
+        "shopkit/discounts.py::percent_off",
+        "shopkit/discounts.py::bulk_discount_percent",
+        "shopkit/money.py::split_evenly"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/money.py::apply_percent",
+        "shopkit/discounts.py::percent_off",
+        "shopkit/tax.py::tax_cents",
+        "shopkit/discounts.py::fixed_off",
+        "shopkit/coupons.py::CouponBook.discount_for"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "shopkit/money.py::apply_percent",
+        "shopkit/discounts.py::percent_off",
+        "shopkit/tax.py::tax_cents",
+        "shopkit/discounts.py::cart_bulk_discount",
+        "shopkit/coupons.py::CouponBook.discount_for"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 9,
+      "function_rank": 48,
+      "top5": [
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/wishlist.py::Wishlist.affordable",
+        "shopkit/loyalty.py::points_for_purchase",
+        "shopkit/reports.py::revenue_by_day"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 45,
+      "top5": [
+        "shopkit/money.py::clamp_cents",
+        "shopkit/money.py::split_evenly",
+        "shopkit/history.py::lifetime_spend_cents",
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/history.py::filter_orders"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 2,
+      "function_rank": 45,
+      "top5": [
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/money.py::split_evenly",
+        "shopkit/history.py::filter_orders",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/history.py::lifetime_spend_cents"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-06",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 4,
+      "function_rank": 105,
+      "top5": [
+        "shopkit/reports.py::revenue_by_day",
+        "shopkit/wishlist.py::Wishlist.affordable",
+        "shopkit/receipts.py::render_receipt",
+        "shopkit/money.py::split_evenly",
+        "shopkit/sorting.py::<module>"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 3,
+      "function_rank": 3,
+      "top5": [
+        "shopkit/cart.py::Cart.total_weight_g",
+        "shopkit/discounts.py::cart_bulk_discount",
+        "shopkit/models.py::CartItem.line_weight_g",
+        "shopkit/checkout.py::place_order",
+        "shopkit/reports.py::top_products"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 7,
+        "shopkit/cart.py::total_weight_g": 1
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 2,
+      "function_rank": 2,
+      "top5": [
+        "shopkit/cart.py::Cart.total_weight_g",
+        "shopkit/models.py::CartItem.line_weight_g",
+        "shopkit/shipping.py::<module>",
+        "shopkit/shipping.py::shipping_cents",
+        "shopkit/cart.py::Cart.item_count"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 4,
+        "shopkit/cart.py::total_weight_g": 1
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 2,
+      "function_rank": 2,
+      "top5": [
+        "shopkit/cart.py::Cart.total_weight_g",
+        "shopkit/models.py::CartItem.line_weight_g",
+        "shopkit/discounts.py::cart_bulk_discount",
+        "shopkit/shipping.py::shipping_cents",
+        "shopkit/shipping.py::<module>"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 4,
+        "shopkit/cart.py::total_weight_g": 1
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 4,
+      "function_rank": 4,
+      "top5": [
+        "shopkit/cart.py::Cart.total_weight_g",
+        "shopkit/discounts.py::cart_bulk_discount",
+        "shopkit/reports.py::top_products",
+        "shopkit/models.py::CartItem.line_weight_g",
+        "shopkit/shipping.py::shipping_cents"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 5,
+        "shopkit/cart.py::total_weight_g": 1
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 13,
+      "function_rank": 13,
+      "top5": [
+        "shopkit/history.py::lifetime_spend_cents",
+        "shopkit/history.py::orders_for_customer",
+        "shopkit/notifications.py::<module>",
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/checkout.py::place_order"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 21,
+        "shopkit/cart.py::total_weight_g": 44
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 35,
+      "function_rank": 35,
+      "top5": [
+        "shopkit/notifications.py::<module>",
+        "shopkit/shipping.py::<module>",
+        "shopkit/history.py::lifetime_spend_cents",
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/orders.py::OrderStatus"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 6,
+        "shopkit/cart.py::total_weight_g": 66
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 19,
+      "function_rank": 19,
+      "top5": [
+        "shopkit/history.py::lifetime_spend_cents",
+        "shopkit/notifications.py::<module>",
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/history.py::orders_for_customer",
+        "shopkit/checkout.py::place_order"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 12,
+        "shopkit/cart.py::total_weight_g": 51
+      }
+    },
+    {
+      "bug_id": "shop-08",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 5,
+      "function_rank": 5,
+      "top5": [
+        "shopkit/refunds.py::refund_cents",
+        "shopkit/orders.py::Order.item_count",
+        "shopkit/checkout.py::place_order",
+        "shopkit/wishlist.py::Wishlist.affordable",
+        "shopkit/models.py::CartItem.line_weight_g"
+      ],
+      "decoy_ranks": {
+        "shopkit/shipping.py::shipping_cents": 11,
+        "shopkit/cart.py::total_weight_g": 50
+      }
+    },
+    {
+      "bug_id": "task-01",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/archive.py::archivable",
+        "taskboard/archive.py::archive_old",
+        "taskboard/reports.py::completed_between",
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/scheduler.py::schedule"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/archive.py::archivable",
+        "taskboard/archive.py::archive_old",
+        "taskboard/estimates.py::unestimated",
+        "taskboard/parser.py::<module>",
+        "taskboard/deadlines.py::is_overdue"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/archive.py::archivable",
+        "taskboard/archive.py::archive_old",
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/reports.py::completed_between",
+        "taskboard/burndown.py::actual_burndown"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/archive.py::archivable",
+        "taskboard/archive.py::archive_old",
+        "taskboard/reports.py::cycle_times",
+        "taskboard/deadlines.py::urgency_score",
+        "taskboard/reports.py::completed_between"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 2,
+      "function_rank": 2,
+      "top5": [
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/archive.py::archivable",
+        "taskboard/scheduler.py::schedule",
+        "taskboard/reports.py::cycle_times",
+        "taskboard/reports.py::completed_between"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 3,
+      "top5": [
+        "taskboard/archive.py::archive_old",
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/archive.py::archivable",
+        "taskboard/notifications.py::digest_lines",
+        "taskboard/estimates.py::unestimated"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 2,
+      "function_rank": 2,
+      "top5": [
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/archive.py::archivable",
+        "taskboard/deadlines.py::days_until",
+        "taskboard/archive.py::archive_old",
+        "taskboard/burndown.py::actual_burndown"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-01",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 2,
+      "function_rank": 2,
+      "top5": [
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/archive.py::archivable",
+        "taskboard/errors.py::BoardError",
+        "taskboard/recurrence.py::add_months",
+        "taskboard/reports.py::cycle_times"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/stats.py::median",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/archive.py::archivable",
+        "taskboard/archive.py::archive_old",
+        "taskboard/burndown.py::ideal_burndown"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/stats.py::median",
+        "taskboard/stats.py::stdev",
+        "taskboard/stats.py::mean",
+        "taskboard/stats.py::percentile",
+        "taskboard/estimates.py::variance_percent"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/stats.py::median",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/estimates.py::variance_percent",
+        "taskboard/estimates.py::unestimated",
+        "taskboard/estimates.py::accuracy_percent"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/stats.py::median",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/archive.py::archivable",
+        "taskboard/archive.py::archive_old",
+        "taskboard/burndown.py::ideal_burndown"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 102,
+      "function_rank": 103,
+      "top5": [
+        "taskboard/reports.py::cycle_times",
+        "taskboard/reports.py::completion_rate",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/reports.py::completed_between",
+        "taskboard/archive.py::archivable"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 87,
+      "function_rank": 111,
+      "top5": [
+        "taskboard/reports.py::completion_rate",
+        "taskboard/reports.py::cycle_times",
+        "taskboard/reports.py::workload_by_user",
+        "taskboard/estimates.py::unestimated",
+        "taskboard/reports.py::cycle_time_summary"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 99,
+      "function_rank": 112,
+      "top5": [
+        "taskboard/reports.py::completion_rate",
+        "taskboard/reports.py::cycle_times",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/reports.py::completed_between",
+        "taskboard/archive.py::archivable"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-02",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 101,
+      "function_rank": 102,
+      "top5": [
+        "taskboard/reports.py::cycle_times",
+        "taskboard/reports.py::completion_rate",
+        "taskboard/archive.py::archivable",
+        "taskboard/burndown.py::remaining_on",
+        "taskboard/reports.py::cycle_time_summary"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/recurrence.py::add_months",
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/burndown.py::ideal_burndown",
+        "taskboard/burndown.py::actual_burndown",
+        "taskboard/parser.py::parse_quick_add"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/recurrence.py::add_months",
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/deadlines.py::days_until",
+        "taskboard/validators.py::validate_due",
+        "taskboard/parser.py::<module>"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/recurrence.py::add_months",
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/deadlines.py::days_until",
+        "taskboard/validators.py::validate_due",
+        "taskboard/burndown.py::ideal_burndown"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/recurrence.py::add_months",
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/burndown.py::ideal_burndown",
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/export.py::escape_field"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 6,
+      "top5": [
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/reports.py::completed_between",
+        "taskboard/timetracking.py::make_entry",
+        "taskboard/burndown.py::ideal_burndown",
+        "taskboard/burndown.py::actual_burndown"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 2,
+      "function_rank": 27,
+      "top5": [
+        "taskboard/errors.py::CycleError",
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/parser.py::<module>",
+        "taskboard/timetracking.py::TimeEntry",
+        "taskboard/errors.py::NotFound"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 12,
+      "top5": [
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/timetracking.py::TimeEntry",
+        "taskboard/timetracking.py::make_entry",
+        "taskboard/recurrence.py::occurrences",
+        "taskboard/tasks.py::TaskStore.__init__"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-03",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/recurrence.py::add_months",
+        "taskboard/status.py::next_status",
+        "taskboard/recurrence.py::next_occurrence",
+        "taskboard/timetracking.py::make_entry",
+        "taskboard/scheduler.py::schedule"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/reports.py::completion_rate",
+        "taskboard/tasks.py::TaskStore.by_project",
+        "taskboard/reports.py::cycle_times",
+        "taskboard/projects.py::progress_percent",
+        "taskboard/dependencies.py::topological_order"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/reports.py::completion_rate",
+        "taskboard/projects.py::progress_percent",
+        "taskboard/parser.py::<module>",
+        "taskboard/estimates.py::unestimated",
+        "taskboard/projects.py::completed"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/reports.py::completion_rate",
+        "taskboard/projects.py::progress_percent",
+        "taskboard/projects.py::completed",
+        "taskboard/models.py::Project",
+        "taskboard/tasks.py::TaskStore.get"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/reports.py::completion_rate",
+        "taskboard/tasks.py::TaskStore.by_project",
+        "taskboard/models.py::Project",
+        "taskboard/reports.py::cycle_times",
+        "taskboard/projects.py::progress_percent"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 27,
+      "function_rank": 27,
+      "top5": [
+        "taskboard/projects.py::progress_percent",
+        "taskboard/status.py::can_move",
+        "taskboard/tasks.py::TaskStore.move",
+        "taskboard/status.py::require_move",
+        "taskboard/tasks.py::TaskStore.by_project"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 34,
+      "function_rank": 39,
+      "top5": [
+        "taskboard/errors.py::CycleError",
+        "taskboard/models.py::Project",
+        "taskboard/errors.py::NotFound",
+        "taskboard/errors.py::BoardError",
+        "taskboard/status.py::<module>"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 31,
+      "function_rank": 31,
+      "top5": [
+        "taskboard/models.py::Project",
+        "taskboard/projects.py::progress_percent",
+        "taskboard/status.py::<module>",
+        "taskboard/models.py::Task",
+        "taskboard/status.py::require_move"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-04",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 12,
+      "function_rank": 12,
+      "top5": [
+        "taskboard/projects.py::progress_percent",
+        "taskboard/status.py::can_move",
+        "taskboard/tasks.py::TaskStore.by_project",
+        "taskboard/status.py::require_move",
+        "taskboard/tasks.py::TaskStore.move"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/priorities.py::escalate",
+        "taskboard/stats.py::stdev",
+        "taskboard/stats.py::mean",
+        "taskboard/validators.py::validate_estimate"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/timetracking.py::total_minutes",
+        "taskboard/formatting.py::format_duration",
+        "taskboard/timetracking.py::minutes_per_day",
+        "taskboard/parser.py::parse_duration"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/formatting.py::format_duration",
+        "taskboard/timetracking.py::total_minutes",
+        "taskboard/priorities.py::escalate",
+        "taskboard/validators.py::validate_estimate"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/stats.py::stdev",
+        "taskboard/stats.py::mean",
+        "taskboard/validators.py::validate_estimate",
+        "taskboard/formatting.py::format_duration"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/timetracking.py::TimeEntry.minutes",
+        "taskboard/status.py::<module>",
+        "taskboard/timetracking.py::total_minutes",
+        "taskboard/timetracking.py::minutes_per_day"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/notifications.py::digest_lines",
+        "taskboard/priorities.py::escalate",
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/reports.py::workload_by_user"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/status.py::<module>",
+        "taskboard/validators.py::validate_estimate",
+        "taskboard/timetracking.py::TimeEntry.minutes",
+        "taskboard/parser.py::parse_duration"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-06",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/timetracking.py::round_up_minutes",
+        "taskboard/timetracking.py::TimeEntry.minutes",
+        "taskboard/status.py::<module>",
+        "taskboard/timetracking.py::total_minutes",
+        "taskboard/timetracking.py::minutes_per_day"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-07",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/filters.py::filter_tasks",
+        "taskboard/dependencies.py::blocked_tasks"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 7,
+        "taskboard/tags.py::parse_tags": 3
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/tags.py::normalize_tag",
+        "taskboard/priorities.py::<module>"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 4,
+        "taskboard/tags.py::parse_tags": 2
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/tags.py::normalize_tag",
+        "taskboard/priorities.py::parse_priority"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 4,
+        "taskboard/tags.py::parse_tags": 3
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/dependencies.py::blocked_tasks",
+        "taskboard/priorities.py::parse_priority"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 17,
+        "taskboard/tags.py::parse_tags": 3
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 2,
+      "top5": [
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::related_tags",
+        "taskboard/filters.py::filter_tasks",
+        "taskboard/tasks.py::TaskStore.add_dependency"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 11,
+        "taskboard/tags.py::parse_tags": 12
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/tags.py::normalize_tag"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 5,
+        "taskboard/tags.py::parse_tags": 2
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::related_tags",
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/tags.py::popular_tags",
+        "taskboard/filters.py::filter_tasks"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 8,
+        "taskboard/tags.py::parse_tags": 7
+      }
+    },
+    {
+      "bug_id": "task-07",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::related_tags",
+        "taskboard/parser.py::QuickAdd",
+        "taskboard/tasks.py::TaskStore.add_dependency",
+        "taskboard/tags.py::popular_tags"
+      ],
+      "decoy_ranks": {
+        "taskboard/tags.py::normalize_tag": 6,
+        "taskboard/tags.py::parse_tags": 10
+      }
+    },
+    {
+      "bug_id": "task-08",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/tags.py::parse_tags"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/tags.py::tag_counts",
+        "taskboard/tags.py::normalize_tag"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::tag_counts"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/reports.py::cycle_time_summary",
+        "taskboard/parser.py::parse_quick_add",
+        "taskboard/tags.py::parse_tags"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tasks.py::TaskStore.add_dependency",
+        "taskboard/tags.py::related_tags",
+        "taskboard/dependencies.py::topological_order",
+        "taskboard/search.py::matches"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/tags.py::tag_counts",
+        "taskboard/dependencies.py::topological_order"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/dependencies.py::topological_order",
+        "taskboard/tags.py::tag_counts"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "task-08",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "taskboard/tags.py::popular_tags",
+        "taskboard/tags.py::related_tags",
+        "taskboard/tags.py::parse_tags",
+        "taskboard/search.py::matches",
+        "taskboard/dependencies.py::topological_order"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/mathx.py::factorial",
+        "tinyutils/lists.py::chunk",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/lists.py::unique"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/strings.py::slugify",
+        "tinyutils/strings.py::capitalize_words",
+        "tinyutils/strings.py::is_palindrome",
+        "tinyutils/strings.py::first_word"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/lists.py::chunk",
+        "tinyutils/lists.py::flatten",
+        "tinyutils/mathx.py::factorial",
+        "tinyutils/lists.py::last"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/mathx.py::factorial",
+        "tinyutils/lists.py::chunk",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/lists.py::unique"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/lists.py::unique",
+        "tinyutils/strings.py::count_words",
+        "tinyutils/strings.py::is_palindrome",
+        "tinyutils/strings.py::capitalize_words"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/strings.py::count_words",
+        "tinyutils/strings.py::slugify",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/lists.py::last"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/strings.py::truncate",
+        "tinyutils/strings.py::count_words",
+        "tinyutils/strings.py::slugify",
+        "tinyutils/strings.py::is_palindrome",
+        "tinyutils/strings.py::capitalize_words"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-01",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 2,
+      "function_rank": 2,
+      "top5": [
+        "tinyutils/lists.py::unique",
+        "tinyutils/strings.py::truncate",
+        "tinyutils/strings.py::count_words",
+        "tinyutils/strings.py::is_palindrome",
+        "tinyutils/strings.py::capitalize_words"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "specific",
+      "method": "bm25",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/lists.py::last",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/mathx.py::factorial",
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::chunk"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "specific",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/lists.py::last",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::flatten",
+        "tinyutils/lists.py::unique"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "specific",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/lists.py::last",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/mathx.py::average",
+        "tinyutils/mathx.py::factorial",
+        "tinyutils/lists.py::flatten"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "specific",
+      "method": "bm25_nostem",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/lists.py::last",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/mathx.py::factorial",
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::chunk"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "vague",
+      "method": "bm25",
+      "file_rank": 2,
+      "function_rank": 4,
+      "top5": [
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::chunk",
+        "tinyutils/lists.py::rotate",
+        "tinyutils/lists.py::last",
+        "tinyutils/lists.py::unique"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "vague",
+      "method": "embedding",
+      "file_rank": 1,
+      "function_rank": 1,
+      "top5": [
+        "tinyutils/lists.py::last",
+        "tinyutils/lists.py::chunk",
+        "tinyutils/lists.py::flatten",
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::rotate"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "vague",
+      "method": "hybrid",
+      "file_rank": 1,
+      "function_rank": 2,
+      "top5": [
+        "tinyutils/lists.py::chunk",
+        "tinyutils/lists.py::last",
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::rotate",
+        "tinyutils/lists.py::flatten"
+      ],
+      "decoy_ranks": {}
+    },
+    {
+      "bug_id": "tiny-02",
+      "style": "vague",
+      "method": "bm25_nostem",
+      "file_rank": 2,
+      "function_rank": 8,
+      "top5": [
+        "tinyutils/mathx.py::average",
+        "tinyutils/lists.py::chunk",
+        "tinyutils/mathx.py::clamp",
+        "tinyutils/lists.py::flatten",
+        "tinyutils/lists.py::rotate"
+      ],
+      "decoy_ranks": {}
+    }
+  ]
+}

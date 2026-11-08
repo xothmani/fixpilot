@@ -76,6 +76,43 @@ def cmd_bench_validate(args: argparse.Namespace) -> int:
     return 1 if bad else 0
 
 
+def cmd_bench_retrieval(args: argparse.Namespace) -> int:
+    from fixpilot.benchmark import load_bugs
+    from fixpilot.config import PROJECT_ROOT
+    from fixpilot.retrieval.embeddings import FastEmbedder
+    from fixpilot.retrieval.evaluate import evaluate, format_report, save_results
+
+    bugs = load_bugs(args.status)
+    embedder = FastEmbedder()
+    print(f"Searching {len(bugs)} bugs (the first run downloads the embedding model)...")
+    results = evaluate(bugs, embedder)
+    embedder.save()
+    print()
+    print(format_report(results, bugs, embedder.model_name))
+    if not args.no_save:
+        out = PROJECT_ROOT / "benchmark" / "results" / "retrieval.json"
+        save_results(results, bugs, embedder.model_name, out)
+        print(f"Saved {out.relative_to(PROJECT_ROOT)}")
+    return 0
+
+
+def cmd_search(args: argparse.Namespace) -> int:
+    from fixpilot.retrieval import CodeIndex
+    from fixpilot.retrieval.embeddings import FastEmbedder
+
+    repo = _resolve_repo(args.repo)
+    embedder = None if args.method == "bm25" else FastEmbedder()
+    index = CodeIndex.build(repo, embedder)
+    if embedder is not None:
+        embedder.save()
+    for h in index.search(args.query, args.k, args.method):
+        c = h.chunk
+        first = next((ln.strip() for ln in c.code.splitlines() if ln.strip()), "")
+        print(f"{h.rank}. {c.path}:{c.start_line}-{c.end_line}  {c.symbol}  (score {h.score:.3f})")
+        print(f"     {first[:90]}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="fixpilot")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -97,6 +134,18 @@ def main(argv: list[str] | None = None) -> int:
     bv.add_argument("--status", default="all", choices=["all", "proposed", "approved"])
     bv.add_argument("--id", action="append", help="Only this bug (can repeat)")
     bv.set_defaults(func=cmd_bench_validate)
+
+    br = bsub.add_parser("retrieval", help="Measure code search recall on the bug reports")
+    br.add_argument("--status", default="all", choices=["all", "proposed", "approved"])
+    br.add_argument("--no-save", action="store_true", help="Do not write benchmark/results/")
+    br.set_defaults(func=cmd_bench_retrieval)
+
+    se = sub.add_parser("search", help="Search a repo's code for a text query")
+    se.add_argument("repo", help="Path to a repo, or the name of a repo in benchmark/repos")
+    se.add_argument("query")
+    se.add_argument("-k", type=int, default=5)
+    se.add_argument("--method", default="hybrid", choices=["bm25", "embedding", "hybrid"])
+    se.set_defaults(func=cmd_search)
 
     args = parser.parse_args(argv)
     try:

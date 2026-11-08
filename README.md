@@ -6,8 +6,9 @@ Given a bug report and a small Python repo, FixPilot will find the likely buggy 
 run the tests in a locked sandbox, retry if needed, and write a report. A human approves or
 rejects the change. The agent never pushes code by itself.
 
-**Status: Stage 2 of 9 (bug benchmark v1).** There is no agent yet. So far there is a safe test
-runner, three sample repos, and 15 planted bugs (12 reviewed and approved, 3 waiting for review).
+**Status: Stage 3 of 9 (code search).** There is no agent yet. So far there is a safe test
+runner, three sample repos, 15 planted bugs (12 approved, 3 waiting for review), and a code search
+with measured recall.
 
 ## Quick start
 
@@ -81,12 +82,14 @@ src/fixpilot/
   config.py            settings from environment variables
   cli.py               the `fixpilot` command
   benchmark.py         loads bugs, plants them in a copy, validates them
+  retrieval/           chunker, BM25, embeddings, hybrid index, recall evaluation
   sandbox/
     workspace.py       makes a temporary copy of a repo
     docker_runner.py   runs pytest inside the locked container
 docker/Dockerfile.sandbox   the sandbox image (Python 3.12 and pytest only)
 benchmark/repos/            the sample repos
 benchmark/bugs/             one JSON file per planted bug
+benchmark/results/          saved measurements
 tests/                      tests for FixPilot itself
 ```
 
@@ -110,11 +113,41 @@ fixpilot bench validate --status approved
 `validate` first checks that each clean repo passes, then for every bug confirms that the tests
 listed in `failing_tests` really fail and that no other test fails.
 
+## Code search (RAG)
+
+Code is split into one chunk per function or method (using Python's `ast`), plus small chunks for
+class headers and module constants. Test files are never indexed. Three ways to search:
+
+- **BM25**: keyword search. Rare words that match count the most. Written out in about 40 lines.
+- **Embeddings**: meaning search with a small local model (`BAAI/bge-small-en-v1.5`, via fastembed).
+- **Hybrid**: both rankings merged with reciprocal rank fusion (score = sum of 1 / (60 + rank)).
+
+```bash
+fixpilot search shopkit "coupon rejected on its last day" -k 3
+fixpilot bench retrieval          # measure recall on all bugs, saves benchmark/results/retrieval.json
+```
+
+### Retrieval results (Stage 3)
+
+Query = the bug report text only. No test is run. Numbers are "bugs where the right file/function
+is in the top 5 chunks", out of 15. The search settings were fixed before measuring and were not
+tuned on these bugs. Three of the 15 bugs (shop-08, task-07, task-08) are not yet human reviewed.
+
+| Method | Specific, file@5 | Specific, function@5 | Vague, file@5 | Vague, function@5 |
+|---|---|---|---|---|
+| BM25 only | 15/15 | 15/15 | 10/15 | 9/15 |
+| Embeddings only | 15/15 | 15/15 | 10/15 | 7/15 |
+| Hybrid | 15/15 | 15/15 | 12/15 | 10/15 |
+
+Specific reports name the public function, so they are close to a lookup and are a weak test.
+The vague reports are the real test of retrieval. With about 130 chunks per large repo, picking 5
+at random would hit the right function about 4 percent of the time.
+
 ## Roadmap
 
 1. Project setup and sandbox (done)
 2. Bug benchmark v1, 15 planted bugs with ground truth (3 still waiting for review)
-3. Code search (RAG) and retrieval recall
+3. Code search (RAG) and retrieval recall (done)
 4. Agent v1 (LangGraph)
 5. Retry loop, report, human approval
 6. Full benchmark and improvements
