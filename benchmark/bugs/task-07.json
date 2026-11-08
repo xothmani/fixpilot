@@ -1,7 +1,7 @@
 {
   "id": "task-07",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "case_sensitivity",
   "difficulty": "hard",
   "file": "taskboard/parser.py",

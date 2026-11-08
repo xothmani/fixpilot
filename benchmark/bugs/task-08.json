@@ -1,7 +1,7 @@
 {
   "id": "task-08",
   "repo": "taskboard",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "sort_tie_break",
   "difficulty": "medium",
   "file": "taskboard/tags.py",

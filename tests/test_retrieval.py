@@ -1,7 +1,5 @@
-import hashlib
-
-import numpy as np
 import pytest
+from helpers import FakeEmbedder
 
 from fixpilot.benchmark import load_bugs
 from fixpilot.config import BENCHMARK_REPOS
@@ -34,27 +32,6 @@ class Box:
     def grow(self):
         return Box()
 '''
-
-
-class FakeEmbedder:
-    """Deterministic fake: hashes words into a small vector. Records every query it sees."""
-
-    def __init__(self):
-        self.queries: list[str] = []
-
-    def _vec(self, text):
-        v = np.zeros(32, dtype=np.float32)
-        for w in tokenize(text):
-            v[int(hashlib.md5(w.encode()).hexdigest(), 16) % 32] += 1
-        n = np.linalg.norm(v)
-        return v / n if n else v
-
-    def embed_passages(self, texts):
-        return np.vstack([self._vec(t) for t in texts])
-
-    def embed_query(self, text):
-        self.queries.append(text)
-        return self._vec(text)
 
 
 def test_chunker_splits_functions_methods_class_header_and_constants():
@@ -173,6 +150,6 @@ def test_real_embedding_model_finds_an_obvious_match(tmp_path):
     (tmp_path / "pkg" / "a.py").write_text(
         "def send_email(to):\n    return to\n\n\ndef compute_tax(amount):\n    return amount * 0.2\n"
     )
-    emb = FastEmbedder(cache_dir=tmp_path / "cache")
+    emb = FastEmbedder()  # uses the shared .cache so the model is not downloaded again
     top = CodeIndex.build(tmp_path, emb).search("how much sales tax is charged", 1, "embedding")[0]
     assert top.chunk.symbol == "compute_tax"

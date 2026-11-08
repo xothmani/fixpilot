@@ -15,6 +15,7 @@ from pathlib import Path
 
 from fixpilot.config import BENCHMARK_REPOS, PROJECT_ROOT, SandboxConfig
 from fixpilot.sandbox import TestResult, Workspace, run_pytest
+from fixpilot.sandbox import failed_test_ids as _failed_ids
 
 BUGS_DIR = PROJECT_ROOT / "benchmark" / "bugs"
 BUG_TYPES = {
@@ -108,11 +109,8 @@ def apply_bug(repo_dir: Path, bug: Bug) -> None:
     target.write_text(text.replace(bug.old, bug.new))
 
 
-_FAILED_RE = re.compile(r"^(?:FAILED|ERROR) (\S+)", re.MULTILINE)
-
-
 def failed_test_ids(result: TestResult) -> list[str]:
-    return sorted(set(_FAILED_RE.findall(result.output)))
+    return _failed_ids(result.output)
 
 
 @dataclass

@@ -113,6 +113,44 @@ def cmd_search(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_scripted_run(args: argparse.Namespace) -> int:
+    from fixpilot.agent.scripted import run_scripted
+    from fixpilot.benchmark import load_bugs
+    from fixpilot.retrieval.embeddings import FastEmbedder
+
+    bugs = load_bugs("approved")
+    if not args.all:
+        if not args.bug_id:
+            raise SystemExit("Give a bug id (see `fixpilot bench list`) or use --all")
+        bugs = [b for b in bugs if b.id == args.bug_id]
+        if not bugs:
+            raise SystemExit(f"No approved bug with id {args.bug_id}")
+    embedder = FastEmbedder() if not args.no_search else None
+    mode = "blind" if args.blind else "realistic"
+    print("SCRIPTED ORACLE RUN: undoes the planted bug using ground truth. It tests the plumbing,")
+    print(f"it is NOT an agent and NOT a result. Search: {'off' if args.no_search else 'on'}, "
+          f"test output: {mode}\n")
+    rows = []
+    for bug in bugs:
+        out = run_scripted(bug, search=not args.no_search, embedder=embedder, test_mode=mode,
+                           wrong_first=args.wrong_first)
+        rows.append(out)
+        if len(bugs) == 1:
+            for i, line in enumerate(out.steps, 1):
+                print(f"  step {i}: {line}")
+            print()
+    if embedder is not None:
+        embedder.save()
+    print(f"{'bug':<9}{'status':<13}{'attempts':<10}{'tool calls':<12}{'verified':<10}{'seconds':<8}")
+    for o in rows:
+        print(f"{o.bug_id:<9}{o.status:<13}{o.attempts:<10}{o.tool_calls:<12}"
+              f"{o.tests_verified!s:<10}{o.seconds:<8}")
+    print(f"\n{sum(o.status == 'fixed' for o in rows)}/{len(rows)} ended as fixed")
+    if rows[-1].run_dir:
+        print(f"Logs and report of the last run: {rows[-1].run_dir}")
+    return 0 if all(o.status == "fixed" for o in rows) else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="fixpilot")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -146,6 +184,14 @@ def main(argv: list[str] | None = None) -> int:
     se.add_argument("-k", type=int, default=5)
     se.add_argument("--method", default="hybrid", choices=["bm25", "embedding", "hybrid"])
     se.set_defaults(func=cmd_search)
+
+    sr = sub.add_parser("scripted-run", help="Run the no-LLM oracle script through the agent tools")
+    sr.add_argument("bug_id", nargs="?")
+    sr.add_argument("--all", action="store_true", help="Run every approved bug")
+    sr.add_argument("--no-search", action="store_true", help="Turn search_code off (baseline)")
+    sr.add_argument("--blind", action="store_true", help="Hide test tracebacks (condition B)")
+    sr.add_argument("--wrong-first", action="store_true", help="Try a useless patch first")
+    sr.set_defaults(func=cmd_scripted_run)
 
     args = parser.parse_args(argv)
     try:

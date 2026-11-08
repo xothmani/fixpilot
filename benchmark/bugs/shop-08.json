@@ -1,7 +1,7 @@
 {
   "id": "shop-08",
   "repo": "shopkit",
-  "status": "proposed",
+  "status": "approved",
   "bug_type": "small_logic_error",
   "difficulty": "hard",
   "file": "shopkit/models.py",

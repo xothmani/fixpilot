@@ -39,6 +39,14 @@ class TestResult:
     output: str  # trimmed
 
 
+_FAILED_RE = re.compile(r"^(?:FAILED|ERROR) (\S+)", re.MULTILINE)
+
+
+def failed_test_ids(output: str) -> list[str]:
+    """Test ids from pytest's short summary, e.g. 'tests/test_a.py::test_x'."""
+    return sorted(set(_FAILED_RE.findall(output)))
+
+
 def validate_target(target: str) -> str:
     """Only allow plain pytest paths and node ids. Blocks option injection like '-p evil'."""
     if target == "":

@@ -6,9 +6,9 @@ Given a bug report and a small Python repo, FixPilot will find the likely buggy 
 run the tests in a locked sandbox, retry if needed, and write a report. A human approves or
 rejects the change. The agent never pushes code by itself.
 
-**Status: Stage 3 of 9 (code search).** There is no agent yet. So far there is a safe test
-runner, three sample repos, 15 planted bugs (12 approved, 3 waiting for review), and a code search
-with measured recall.
+**Status: Stage 4a of 9 (agent tools and state).** There is no LLM yet. So far there is a safe
+test runner, three sample repos, 15 planted bugs (all approved), a code search with measured
+recall, and the five agent tools with state, limits and logs, driven by a script.
 
 ## Quick start
 
@@ -131,7 +131,7 @@ fixpilot bench retrieval          # measure recall on all bugs, saves benchmark/
 
 Query = the bug report text only. No test is run. Numbers are "bugs where the right file/function
 is in the top 5 chunks", out of 15. The search settings were fixed before measuring and were not
-tuned on these bugs. Three of the 15 bugs (shop-08, task-07, task-08) are not yet human reviewed.
+tuned on these bugs. All 15 bugs are human reviewed.
 
 | Method | Specific, file@5 | Specific, function@5 | Vague, file@5 | Vague, function@5 |
 |---|---|---|---|---|
@@ -139,16 +139,61 @@ tuned on these bugs. Three of the 15 bugs (shop-08, task-07, task-08) are not ye
 | Embeddings only | 15/15 | 15/15 | 10/15 | 7/15 |
 | Hybrid | 15/15 | 15/15 | 12/15 | 10/15 |
 
+Notes on honesty:
+- **The stemmer did not help.** A BM25 ablation without stemming scored the same as hybrid on vague
+  reports (10/15 function@5) and slightly better than BM25 with stemming (9/15). It is kept as is on
+  purpose, so the numbers match what was measured.
+- **No tuning on these 15 bugs.** Settings were fixed before measuring. The bugs added in Stage 6
+  will be a held-out test set.
+- **Difficulty labels are my guesses** (easy, medium, hard). Later they will be compared with
+  measured difficulty: how often the agent actually solves each bug.
+- With only 15 bugs, a one-bug difference between methods is not a real difference.
+
 Specific reports name the public function, so they are close to a lookup and are a weak test.
 The vague reports are the real test of retrieval. With about 130 chunks per large repo, picking 5
 at random would hit the right function about 4 percent of the time.
+
+## The agent tools (Stage 4a)
+
+The agent can only act through five tools. The application validates every call, runs it, enforces
+the limits, and logs it. The LLM never runs a shell command.
+
+| Tool | What it does | Main protections |
+|---|---|---|
+| `search_code(query)` | hybrid search over source code, returns path, lines, snippet | tests are not indexed; can be switched off |
+| `read_file(path, start, end)` | numbered lines, or a directory listing | max 200 lines; no `..`, no absolute paths, symlinks that leave the repo are refused |
+| `run_tests(target)` | pytest in the sandbox | target is checked; time limit shortened to the run time left; output trimmed |
+| `propose_patch(edits)` | exact text replacements on the repo copy | old text must match exactly once; all-or-nothing; syntax checked; tests and config cannot be edited; max 3 files, 60 changed lines |
+| `write_report(...)` | structured report with file and line evidence | evidence lines are checked to exist; status, diff and test results come from the application |
+
+A run counts as **fixed** only when the WHOLE test suite passes after the latest patch. A single
+passing test, or passing tests with no patch, does not count.
+
+Hard limits (all enforced by the application): 4 patch attempts, 25 tool calls, 300 seconds,
+$0.25 and 200k tokens (the last two are used from Stage 4b on). Override with the
+`FIXPILOT_MAX_*` and `FIXPILOT_TIMEOUT_S` environment variables.
+
+Every call is written to `runs/<time>-<bug>/trace.jsonl` with secrets removed. Tests can be shown
+in two ways: `realistic` (full pytest output, condition A) or `blind` (counts and failing test names
+only, condition B).
+
+```bash
+fixpilot scripted-run shop-03               # one bug
+fixpilot scripted-run shop-03 --wrong-first # first patch is useless, then retry
+fixpilot scripted-run --all --no-search     # all bugs, search switched off
+fixpilot scripted-run --all --blind         # hide test tracebacks
+```
+
+**This script is an oracle, not an agent.** It reads the ground truth and undoes the planted bug.
+It proves the tools, limits, sandbox and logs work end to end. A result of 15/15 here says nothing
+about how good an LLM will be.
 
 ## Roadmap
 
 1. Project setup and sandbox (done)
 2. Bug benchmark v1, 15 planted bugs with ground truth (3 still waiting for review)
 3. Code search (RAG) and retrieval recall (done)
-4. Agent v1 (LangGraph)
+4. Agent v1 (LangGraph). 4a tools and state (done), 4b LLM loop and search experiment (see docs/stage-4b-plan.md)
 5. Retry loop, report, human approval
 6. Full benchmark and improvements
 7. Safety tests
