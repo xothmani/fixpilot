@@ -1,0 +1,9 @@
+FROM python:3.12-slim
+
+# Only pytest is installed. The sample repos use the standard library only.
+RUN pip install --no-cache-dir pytest==8.3.4
+
+# The container runs as an unprivileged numeric user (set with --user at run time).
+WORKDIR /work
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
